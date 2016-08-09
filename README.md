@@ -15,7 +15,7 @@ NATS Streaming provides the following high-level feature set:
 ## Installation
 
 ```bash
-npm install nats
+npm install node-nats-streaming
 ```
 
 ## Basic Usage
