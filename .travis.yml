@@ -9,5 +9,7 @@ node_js:
 
 before_script:
   - mkdir -p nats-streaming-server
-  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.2.2/nats-streaming-server-linux-amd64.zip -qO - | tar -zxvC nats-streaming-server/
+  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.2.2/nats-streaming-server-linux-amd64.zip -O nats-streaming-server-amd64.zip
+  - unzip nats-streaming-server-amd64.zip
+  - mv nats-streaming-server-linux-amd64 nats-streaming-server
 
