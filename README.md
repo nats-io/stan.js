@@ -1,4 +1,4 @@
-# node-nats-streaming - Node.js NATS Streaming Client
+# [Work-in-progress] node-nats-streaming - Node.js NATS Streaming Client
 
 Node NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by [NATS](http://nats.io) for [Node.js](http://nodejs.org/).
 
