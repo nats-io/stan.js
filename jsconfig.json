@@ -1,0 +1,13 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=759670
+	// for the documentation about the jsconfig.json format
+	"compilerOptions": {
+		"target": "ES6",
+		"allowSyntheticDefaultImports": true
+	},
+    "files": [
+        "lib/stan.js",
+        "lib/nuid.js",
+        "node_modules/nats/lib/nats.js"
+    ]
+}
