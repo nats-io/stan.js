@@ -47,6 +47,8 @@
     "jshint": "2.9.x",
     "jshint-stylish": "2.2.x",
     "mocha": "3.0.x",
+    "mocha-multi": "0.9.x",
+    "mocha-lcov-reporter": "1.2.x",
     "dependency-check": "2.6.x",
     "istanbul": "0.4.x",
     "coveralls": "^2.11.2",
