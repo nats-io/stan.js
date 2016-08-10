@@ -4,7 +4,7 @@
 
 var STAN = require ('../lib/stan.js'),
 NATS = require('nats'),
-nuid = require('../lib/nuid.js'),
+nuid = require('../lib/nuid'),
 ssc = require('./support/stan_server_control'),
 should = require('should'),
 timers = require('timers');

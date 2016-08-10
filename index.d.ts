@@ -1,7 +1,7 @@
 
 import events = require('events');
 import nats = require('nats');
-import proto = require('./lib/pb/protocol_pb.js');
+import proto = require('./lib/pb');
 
 export const version: string;
 

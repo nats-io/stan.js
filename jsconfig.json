@@ -6,8 +6,6 @@
 		"allowSyntheticDefaultImports": true
 	},
     "files": [
-        "lib/stan.js",
-        "lib/nuid.js",
-        "lib/pb/protocol_pb.js"
+        "lib/stan.js"
     ]
 }

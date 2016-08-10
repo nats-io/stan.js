@@ -3,9 +3,9 @@
 /* global describe: false, before: false, after: false, it: false */
 'use strict';
 
-var STAN = require('../lib/stan.js'),
+var STAN = require('../lib/stan'),
 ssc = require('./support/stan_server_control'),
-nuid = require('../lib/nuid.js'),
+nuid = require('../lib/nuid'),
 should = require('should'),
 timers = require('timers');
 
