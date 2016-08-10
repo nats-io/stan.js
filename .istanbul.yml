@@ -1,4 +1,7 @@
 verbose: false
 
+instrumentation:
+  excludes: ['lib/nuid.js', 'lib/pb/protocol_pb.js']
+
 reporting:
   dir: ./reports/coverage

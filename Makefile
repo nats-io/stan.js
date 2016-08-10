@@ -10,7 +10,7 @@ test:
 
 test-cov:
 	@NODE_ENV=test ./node_modules/.bin/istanbul cover \
-	./node_modules/mocha/bin/mocha -- -R spec --slow 5000
+	_mocha -- -R spec --slow 5000
 
 test-coveralls:
 	echo TRAVIS_JOB_ID $(TRAVIS_JOB_ID)

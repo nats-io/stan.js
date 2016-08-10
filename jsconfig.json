@@ -8,6 +8,6 @@
     "files": [
         "lib/stan.js",
         "lib/nuid.js",
-        "node_modules/nats/lib/nats.js"
+        "lib/pb/protocol_pb.js"
     ]
 }

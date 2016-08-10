@@ -100,7 +100,7 @@ describe('Stan Connection Specific', function() {
     if(notified) {
       done();
     } else {
-      done(new Error('Connection error was not related to encoding:'))
+      done(new Error('Connection error was not related to encoding:'));
     }
   });
 
@@ -119,7 +119,7 @@ describe('Stan Connection Specific', function() {
     if(notified) {
       done();
     } else {
-      done(new Error('Connection error was not related to encoding:'))
+      done(new Error('Connection error was not related to encoding:'));
     }
   });
 
