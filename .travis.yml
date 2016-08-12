@@ -12,3 +12,5 @@ before_script:
   - unzip nats-streaming-server-amd64.zip
   - mv nats-streaming-server-linux-amd64 nats-streaming-server
 
+after_success:
+  - npm run coveralls
