@@ -1,7 +1,6 @@
 
 import events = require('events');
 import nats = require('nats');
-import proto = require('./lib/pb');
 
 export const version: string;
 
@@ -116,7 +115,7 @@ declare class Stan extends events.EventEmitter {
 
 }
 
-enum StartPosition {
+declare enum StartPosition {
     NEW_ONLY = 0,
     LAST_RECEIVED,
     TIME_DELTA_START,
@@ -125,13 +124,13 @@ enum StartPosition {
 }
 
 declare class SubscriptionOptions  {
-    durableName?: string;
-    maxInFlight?: number;
-    ackWait?: number;
+    durableName: string;
+    maxInFlight: number;
+    ackWait: number;
     startPosition: StartPosition;
-    startSequence?: number;
-    startTime?: number;
-    manualAcks?: boolean;
+    startSequence: number;
+    startTime: number;
+    manualAcks: boolean;
 
     /**
      * Sets the maximun number of unacknowledged messages that the streaming server will allow
