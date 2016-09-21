@@ -1,7 +1,7 @@
 
 import events = require('events');
 import nats = require('nats');
-import proto = require('./lib/pb');
+// import proto = require('./lib/pb');
 
 export const version: string;
 
@@ -107,7 +107,7 @@ declare class Stan extends events.EventEmitter {
      * @param qGroup
      * @param opts
      */
-    subscribe(subject: string, qGroup?: string, opts?: SubscriptionOptions): Subscription
+    subscribe(subject: string, qGroup: string, opts?: SubscriptionOptions): Subscription
 
     /**
      * Returns a SubscriptionOptions initialized to defaults
@@ -116,7 +116,7 @@ declare class Stan extends events.EventEmitter {
 
 }
 
-enum StartPosition {
+declare enum StartPosition {
     NEW_ONLY = 0,
     LAST_RECEIVED,
     TIME_DELTA_START,
@@ -124,7 +124,7 @@ enum StartPosition {
     FIRST
 }
 
-declare class SubscriptionOptions  {
+declare interface SubscriptionOptions  {
     durableName?: string;
     maxInFlight?: number;
     ackWait?: number;
