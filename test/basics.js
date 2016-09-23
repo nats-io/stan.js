@@ -57,6 +57,25 @@ describe('Basics', function () {
     });
   });
 
+  it('subscription options should allow chaining', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    stan.on('connect', function () {
+      var so = stan.subscriptionOptions();
+      so.setStartAt(STAN.StartPosition.FIRST).should.be.equal(so);
+      so.setMaxInFlight(100).should.be.equal(so);
+      so.setAckWait(1000).should.be.equal(so);
+      so.setStartAt(1000).should.be.equal(so);
+      so.setStartAtSequence(1000).should.be.equal(so);
+      so.setStartTime(new Date()).should.be.equal(so);
+      so.setStartAtTimeDelta(1000).should.be.equal(so);
+      so.setStartWithLastReceived().should.be.equal(so);
+      so.setDeliverAllAvailable().should.be.equal(so);
+      so.setManualAckMode(true).should.be.equal(so);
+      so.setDurableName('foo').should.be.equal(so);
+      done();
+    });
+  });
+
   it('should do publishAsync', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var connected = false;
