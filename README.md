@@ -80,6 +80,10 @@ The options are described with examples below:
   var subscription = stan.subscribe('foo', opts);
 ```
 
+### Wildcard Subscriptions
+
+NATS Streaming subscriptions **do not** support wildcards.
+
 ### Durable Subscriptions
 
 Replay of messages offers great flexibility for clients wishing to begin processing at some earlier point in the data stream.
