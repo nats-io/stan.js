@@ -147,7 +147,7 @@ declare interface SubscriptionOptions  {
     setAckWait(millis: number): SubscriptionOptions;
 
     /**
-     * Configures the subscription start mode. Note that options like
+     * Configures the subscription start mode.
      * Typically you would invoke this message with StartPostion#FIRST, StartPosition#NEW_ONLY or
      * StartPosition#LAST_RECEIVED. For all other uses (SubscriptionOptions#setStartSequence,
      * SubscriptionOptions#setStartTime, SubscriptionOptions#setStartAtTimeDelta, or
