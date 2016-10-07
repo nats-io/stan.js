@@ -66,6 +66,12 @@ declare class Message {
      * Returns an optional IEEE CRC32 checksum
      */
     getCrc32():number;
+
+    /**
+     * Acks the message, note this method shouldn't be called unless
+     * the manualAcks option was set on the subscription.
+     */
+    ack();
 }
 
 
