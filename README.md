@@ -120,8 +120,6 @@ durableSub.on('message', function(msg) {
 
 Subscriptions with the same queue name will form a queue group. Each message is only delivered to a single subscriber per queue group. You can have as many queue groups as you wish. Normal subscribers are not affected by queue group semantics.
 
-Note that you cannot have a queue group that is also a durable subscriber.
-
 ```javascript
     var opts = stan.subscriptionOptions();
     opts.setStartWithLastReceived();
