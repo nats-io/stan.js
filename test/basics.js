@@ -147,6 +147,7 @@ describe('Basics', function () {
   });
 
 
+
   it('should include the correct reply in the callback', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var count = 0;
@@ -436,6 +437,89 @@ describe('Basics', function () {
       stan.publishAsync(subj, 'first', waitForThree);
       stan.publishAsync(subj, 'second', waitForThree);
       stan.publishAsync(subj, 'third', waitForThree);
+    });
+  });
+
+
+  it('subscribe after 500ms on last received', function (done) {
+    this.timeout(5000);
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    var subj = nuid.next();
+    var count = 0;
+
+    function subscribe() {
+      var gotFirst = false;
+      var opts = stan.subscriptionOptions();
+      opts.setStartAtTimeDelta(1000);
+      var sub = stan.subscribe(subj, opts);
+      sub.on('message', function (msg) {
+        if (!gotFirst) {
+          gotFirst = true;
+          should(msg.getData()).equal('fourth', 'message was not the one expected');
+          done();
+        }
+      });
+    }
+
+    var waitForSix = function () {
+      count++;
+      if (count === 6) {
+        process.nextTick(subscribe);
+      }
+    };
+
+    stan.on('connect', function () {
+      stan.publishAsync(subj, 'first', waitForSix);
+      stan.publishAsync(subj, 'second', waitForSix);
+      stan.publishAsync(subj, 'third', waitForSix);
+      setTimeout(function() {
+        stan.publishAsync(subj, 'fourth', waitForSix);
+        stan.publishAsync(subj, 'fifth', waitForSix);
+        stan.publishAsync(subj, 'sixth', waitForSix);
+      }, 1500)
+    });
+  });
+
+
+
+  it('subscribe after a specific time on last received', function (done) {
+    this.timeout(6000);
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    var subj = nuid.next();
+    var count = 0;
+
+    function subscribe() {
+      var gotFirst = false;
+      var opts = stan.subscriptionOptions();
+      opts.setStartTime(new Date(Date.now() - 1000));
+      var sub = stan.subscribe(subj, opts);
+      sub.on('message', function (msg) {
+        if (!gotFirst) {
+          gotFirst = true;
+          // node will be spurious since we are in a single thread
+          var ok = msg.getData() === 'fourth' || msg.getData() === 'fifth' || msg.getData() === 'sixth';
+          should(ok).equal(true, 'message was not the one expected');
+          done();
+        }
+      });
+    }
+
+    var waitForSix = function () {
+      count++;
+      if (count === 6) {
+        process.nextTick(subscribe);
+      }
+    };
+
+    stan.on('connect', function () {
+      stan.publishAsync(subj, 'first', waitForSix);
+      stan.publishAsync(subj, 'second', waitForSix);
+      stan.publishAsync(subj, 'third', waitForSix);
+      setTimeout(function() {
+        stan.publishAsync(subj, 'fourth', waitForSix);
+        stan.publishAsync(subj, 'fifth', waitForSix);
+        stan.publishAsync(subj, 'sixth', waitForSix);
+      }, 1500);
     });
   });
 
