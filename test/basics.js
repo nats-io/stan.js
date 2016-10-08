@@ -476,7 +476,7 @@ describe('Basics', function () {
         stan.publishAsync(subj, 'fourth', waitForSix);
         stan.publishAsync(subj, 'fifth', waitForSix);
         stan.publishAsync(subj, 'sixth', waitForSix);
-      }, 1500)
+      }, 1500);
     });
   });
 
