@@ -37,7 +37,7 @@ stan.on('connect', function() {
 });
 
 function start() {
-  stan.publishAsync(subject, body, function(err, guid){
+  stan.publish(subject, body, function(err, guid){
     if(err) {
       console.log(err);
       process.exit(1);
