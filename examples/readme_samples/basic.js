@@ -7,7 +7,7 @@ var stan = require('node-nats-streaming').connect('test-cluster', 'test');
 stan.on('connect', function () {
 
   // Simple Publisher (all publishes are async in the node version of the client)
-  stan.publishAsync('foo', 'Hello node-nats-streaming!', function(err, guid){
+  stan.publish('foo', 'Hello node-nats-streaming!', function(err, guid){
     if(err) {
       console.log('publish failed: ' + err);
     } else {

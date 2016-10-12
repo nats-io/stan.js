@@ -29,7 +29,7 @@ var stan = require('node-nats-streaming').connect('test-cluster', 'test');
 stan.on('connect', function () {
 
   // Simple Publisher (all publishes are async in the node version of the client)
-  stan.publishAsync('foo', 'Hello node-nats-streaming!', function(err, guid){
+  stan.publish('foo', 'Hello node-nats-streaming!', function(err, guid){
     if(err) {
       console.log('publish failed: ' + err);
     } else {
@@ -143,7 +143,7 @@ Subscriptions with the same queue name will form a queue group. Each message is 
 For each message published, a [NUID](https://github.com/nats-io/nuid) is generated for the message on creation. When the message is received by the server, the client library is notified on its optional callback:
 
 ```javascript
-    var guid = stan.publishAsync('foo', 'Hello World!', function(err, aGuid){
+    var guid = stan.publish('foo', 'Hello World!', function(err, aGuid){
       // err will be undefined if the message was accepted by the 
       // NATS streaming server
       if(err) {

@@ -76,12 +76,12 @@ describe('Basics', function () {
     });
   });
 
-  it('should do publishAsync', function (done) {
+  it('should do publish', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var connected = false;
     stan.on('connect', function () {
       connected = true;
-      var sid = stan.publishAsync('foo', "bar", function (err, guid) {
+      var sid = stan.publish('foo', "bar", function (err, guid) {
         should.exist(guid);
         guid.should.be.equal(sid);
         should.not.exist(err);
@@ -90,11 +90,11 @@ describe('Basics', function () {
     });
   });
 
-  it('should do basic publishAsync (only pub)', function (done) {
+  it('should do basic publish (only pub)', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     stan.on('connect', function () {
       var subject = nuid.next();
-      stan.publishAsync(subject, 'bzz', function (err, guid) {
+      stan.publish(subject, 'bzz', function (err, guid) {
         should.not.exist(err);
         should.exist(guid);
         stan.close();
@@ -112,7 +112,7 @@ describe('Basics', function () {
       var subject = nuid.next();
       var sub = stan.subscribe(subject, so);
       sub.on('ready', function () {
-        stan.publishAsync(subject, 'foo', function (err, guid) {
+        stan.publish(subject, 'foo', function (err, guid) {
           should.not.exist(err);
           should.exist(guid);
         });
@@ -142,7 +142,7 @@ describe('Basics', function () {
         stan.close();
         done();
       });
-      stan.publishAsync(subject);
+      stan.publish(subject);
     });
   });
 
@@ -184,8 +184,8 @@ describe('Basics', function () {
         maybeFinish();
       });
 
-      stan.publishAsync(subja);
-      stan.publishAsync(subjb);
+      stan.publish(subja);
+      stan.publish(subjb);
     });
   });
 
@@ -231,9 +231,9 @@ describe('Basics', function () {
       // subscriber for request, replies on the specified subject
       var sub = stan.subscribe(req, so);
       sub.on('ready', function () {
-        stan.publishAsync(req, '', maybeFinish);
-        stan.publishAsync(req, '', maybeFinish);
-        stan.publishAsync(req, '', maybeFinish);
+        stan.publish(req, '', maybeFinish);
+        stan.publish(req, '', maybeFinish);
+        stan.publish(req, '', maybeFinish);
       });
       sub.on('message', function (m) {
         received++;
@@ -243,13 +243,13 @@ describe('Basics', function () {
   });
 
 
-  it('publishAsync cb is error if not connected', function (done) {
+  it('publish cb is error if not connected', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     stan.on('connect', function () {
       stan.close();
     });
     stan.on('close', function () {
-      stan.publishAsync('foo', 'bar', function (error) {
+      stan.publish('foo', 'bar', function (error) {
         if (error instanceof Error) {
           done();
         }
@@ -257,14 +257,14 @@ describe('Basics', function () {
     });
   });
 
-  it('publishAsync throws error if not connected', function (done) {
+  it('publish throws error if not connected', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     stan.on('connect', function () {
       stan.close();
     });
     stan.on('close', function () {
       try {
-        stan.publishAsync('foo', 'bar');
+        stan.publish('foo', 'bar');
       } catch (error) {
         done();
       }
@@ -288,7 +288,7 @@ describe('Basics', function () {
       };
 
       for (var i = 0; i < 10; i++) {
-        stan.publishAsync(nuid.next(), 'bar', cb);
+        stan.publish(nuid.next(), 'bar', cb);
       }
     });
   });
@@ -301,7 +301,7 @@ describe('Basics', function () {
     stan.on('connect', function () {
       for (var i = 0; i < 10; i++) {
         try {
-          stan.publishAsync(nuid.next(), buf);
+          stan.publish(nuid.next(), buf);
         } catch (err) {
           if (!failed) {
             if (err.message === 'stan: max in flight reached.') {
@@ -400,9 +400,9 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForThree);
-      stan.publishAsync(subj, 'second', waitForThree);
-      stan.publishAsync(subj, 'third', waitForThree);
+      stan.publish(subj, 'first', waitForThree);
+      stan.publish(subj, 'second', waitForThree);
+      stan.publish(subj, 'third', waitForThree);
     });
   });
 
@@ -434,9 +434,9 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForThree);
-      stan.publishAsync(subj, 'second', waitForThree);
-      stan.publishAsync(subj, 'third', waitForThree);
+      stan.publish(subj, 'first', waitForThree);
+      stan.publish(subj, 'second', waitForThree);
+      stan.publish(subj, 'third', waitForThree);
     });
   });
 
@@ -469,13 +469,13 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForSix);
-      stan.publishAsync(subj, 'second', waitForSix);
-      stan.publishAsync(subj, 'third', waitForSix);
+      stan.publish(subj, 'first', waitForSix);
+      stan.publish(subj, 'second', waitForSix);
+      stan.publish(subj, 'third', waitForSix);
       setTimeout(function() {
-        stan.publishAsync(subj, 'fourth', waitForSix);
-        stan.publishAsync(subj, 'fifth', waitForSix);
-        stan.publishAsync(subj, 'sixth', waitForSix);
+        stan.publish(subj, 'fourth', waitForSix);
+        stan.publish(subj, 'fifth', waitForSix);
+        stan.publish(subj, 'sixth', waitForSix);
       }, 1500);
     });
   });
@@ -512,13 +512,13 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForSix);
-      stan.publishAsync(subj, 'second', waitForSix);
-      stan.publishAsync(subj, 'third', waitForSix);
+      stan.publish(subj, 'first', waitForSix);
+      stan.publish(subj, 'second', waitForSix);
+      stan.publish(subj, 'third', waitForSix);
       setTimeout(function() {
-        stan.publishAsync(subj, 'fourth', waitForSix);
-        stan.publishAsync(subj, 'fifth', waitForSix);
-        stan.publishAsync(subj, 'sixth', waitForSix);
+        stan.publish(subj, 'fourth', waitForSix);
+        stan.publish(subj, 'fifth', waitForSix);
+        stan.publish(subj, 'sixth', waitForSix);
       }, 1500);
     });
   });
@@ -542,7 +542,7 @@ describe('Basics', function () {
       });
 
       sub.on('ready', function () {
-        stan.publishAsync(subj, 'fourth');
+        stan.publish(subj, 'fourth');
       });
     }
 
@@ -554,9 +554,9 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForThree);
-      stan.publishAsync(subj, 'second', waitForThree);
-      stan.publishAsync(subj, 'third', waitForThree);
+      stan.publish(subj, 'first', waitForThree);
+      stan.publish(subj, 'second', waitForThree);
+      stan.publish(subj, 'third', waitForThree);
     });
   });
 
@@ -594,9 +594,9 @@ describe('Basics', function () {
     };
 
     stan.on('connect', function () {
-      stan.publishAsync(subj, 'first', waitForThree);
-      stan.publishAsync(subj, 'second', waitForThree);
-      stan.publishAsync(subj, 'third', waitForThree);
+      stan.publish(subj, 'first', waitForThree);
+      stan.publish(subj, 'second', waitForThree);
+      stan.publish(subj, 'third', waitForThree);
     });
   });
 
@@ -644,7 +644,7 @@ describe('Basics', function () {
 
       function fire() {
         for (var i = 0; i < 10; i++) {
-          stan.publishAsync(subj, i + '');
+          stan.publish(subj, i + '');
         }
       }
     });
@@ -665,7 +665,7 @@ describe('Basics', function () {
       var sub1 = stan.subscribe(subj, opts);
       sub1.on('ready', function () {
         for(var i=0; i < 2; i++) {
-          stan.publishAsync(subj);
+          stan.publish(subj);
         }
       });
 

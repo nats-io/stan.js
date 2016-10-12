@@ -51,7 +51,7 @@ function send(n) {
 
   var callbackCount = 0;
   for (var i = 0; i < n; i++) {
-    stan.publishAsync(subject, body, function (err, guid) {
+    stan.publish(subject, body, function (err, guid) {
       callbackCount++;
       if (err) {
         console.log(i + " " + err);

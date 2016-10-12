@@ -105,7 +105,7 @@ declare class Stan extends events.EventEmitter {
      * @param callback
      * @returns guid generated for the published message
      */
-    publishAsync(subject: string, data?: Uint8Array|string|Buffer, callback?:AckHandlerCallback): string;
+    publish(subject: string, data?: Uint8Array|string|Buffer, callback?:AckHandlerCallback): string;
 
     /**
      * Subscribes to a given subject as an optional member of a queue group.

@@ -109,7 +109,7 @@ describe('Basic Connectivity', function() {
     var ubClosed = false;
 
     ua.on('connect', function() {
-      ua.publishAsync(subject, 'bar', function(err, guid) {
+      ua.publish(subject, 'bar', function(err, guid) {
         should.not.exist(err);
         should.exist(guid);
         ua.close();
@@ -164,7 +164,7 @@ describe('Basic Connectivity', function() {
     var ubClosed = false;
 
     ua.on('connect', function () {
-      ua.publishAsync(subject, 'bar', function (err, guid) {
+      ua.publish(subject, 'bar', function (err, guid) {
         should.not.exist(err);
         should.exist(guid);
         ua.close();
