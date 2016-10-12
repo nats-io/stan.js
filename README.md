@@ -20,29 +20,41 @@ npm install node-nats-streaming
 
 ## Basic Usage
 ```javascript
-var stan = require('stan').connect('test-cluster', 'test');
+#!/usr/bin/env node
+
+"use-strict";
+
+var stan = require('node-nats-streaming').connect('test-cluster', 'test');
 
 stan.on('connect', function () {
-    // Simple Publisher (all publishes are async in the node version of the client)
-    stan.publishAsync('foo', 'Hello World!', function(err, guid){
-        if(err) {
-          console.log('publish failed: ' + err);
-        } else {
-          console.log('published message with guid: ' + guid);
-        }
-    });
-    
-    // Subscriber can specify how many existing messages to get.
-    var subscription = stan.subscribe('foo');
-    subscription.on('message', function (msg) {
-      console.log('Received a message: ' + msg.getData());
-    });
-    
-    // Unsubscribe
+
+  // Simple Publisher (all publishes are async in the node version of the client)
+  stan.publishAsync('foo', 'Hello node-nats-streaming!', function(err, guid){
+    if(err) {
+      console.log('publish failed: ' + err);
+    } else {
+      console.log('published message with guid: ' + guid);
+    }
+  });
+
+  // Subscriber can specify how many existing messages to get.
+  var opts = stan.subscriptionOptions().setStartWithLastReceived();
+  var subscription = stan.subscribe('foo', opts);
+  subscription.on('message', function (msg) {
+    console.log('Received a message [' + msg.getSequence() + '] ' + msg.getData());
+  });
+
+  // After one second, unsubscribe, when that is done, close the connection
+  setTimeout(function() {
     subscription.unsubscribe();
-    
-    // Close connection
-    stan.close();
+    subscription.on('unsubscribed', function() {
+      stan.close();
+    });
+  }, 1000);
+});
+
+stan.on('close', function() {
+  process.exit();
 });
 ```
 
@@ -92,7 +104,7 @@ Durable subscriptions allow clients to assign a durable name to a subscription w
 Doing this causes the NATS Streaming server to track the last acknowledged message for that clientID + durable name, so that only messages since the last acknowledged message will be delivered to the client.
 
 ```javascript
-var stan = require('stan').connect('test-cluster', 'client-123');
+var stan = require('node-nats-streaming').connect('test-cluster', 'client-123');
 
 
 // Subscribe with durable name
@@ -109,7 +121,7 @@ durableSub.on('message', function(msg) {
 stan.close();
 
 // client reconnects in the future with same clientID
-var stan = require('stan').connect('test-cluster', 'client-123');
+var stan = require('node-nats-streaming').connect('test-cluster', 'client-123');
 var durableSub = stan.subscribe('foo', opts);
 durableSub.on('message', function(msg) {
   console.log('Received a message: ' + msg.getData());
