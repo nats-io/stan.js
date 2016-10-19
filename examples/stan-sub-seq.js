@@ -38,6 +38,10 @@ stan.on('connect', function () {
   start();
 });
 
+stan.on('error', function(reason) {
+  console.log(reason);
+});
+
 function start() {
   var opts = stan.subscriptionOptions();
   opts.setStartAtSequence(3);

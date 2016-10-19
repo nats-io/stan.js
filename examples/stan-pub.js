@@ -36,6 +36,10 @@ stan.on('connect', function() {
   start();
 });
 
+stan.on('error', function(reason) {
+  console.log(reason);
+});
+
 function start() {
   stan.publish(subject, body, function(err, guid){
     if(err) {
