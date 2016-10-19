@@ -127,6 +127,27 @@ describe('Basics', function () {
     });
   });
 
+  it('duplicate client id should fire error', function (done) {
+    var wantTwo = 2;
+    var id = nuid.next();
+    var stan = STAN.connect(cluster, id, PORT);
+    stan.on('connect', function () {
+      var stan2 = STAN.connect(cluster, id, PORT);
+      stan2.on('error', function() {
+        wantTwo--;
+        if (wantTwo === 0) {
+          done();
+        }
+      });
+      stan2.on('close', function() {
+        wantTwo--;
+        if (wantTwo === 0) {
+          done();
+        }
+      });
+    });
+  });
+
   it('should include the correct message in the callback', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     stan.on('connect', function () {
