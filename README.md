@@ -24,7 +24,11 @@ npm install node-nats-streaming
 
 "use-strict";
 
-var stan = require('node-nats-streaming').connect('test-cluster', 'test');
+var stan = require('node-nats-streaming').connect('test-cluster', 'test', {
+  // Options passed to node-nats for connecting, see more: https://github.com/nats-io/node-nats
+  url: 'nats://localhost:4222',
+  token: 'asdf1234'
+});
 
 stan.on('connect', function () {
 
