@@ -4,6 +4,13 @@ import nats = require('nats');
 // import proto = require('./lib/pb');
 
 export const version: string;
+export const BAD_SUBJECT: string;
+export const BAD_CLUSTER_ID: string;
+export const BAD_CLIENT_ID: string;
+export const ACK_TIMEOUT: string;
+export const MAX_FLIGHT_LIMIT_REACHED: string;
+export const CONN_CLOSED: string;
+export const BINARY_ENCODING_REQUIRED: string;
 
 
 
