@@ -5,7 +5,7 @@
 
 var STAN = require('../lib/stan'),
 ssc = require('./support/stan_server_control'),
-nuid = require('../lib/nuid'),
+nuid = require('nuid'),
 should = require('should'),
 timers = require('timers');
 
@@ -133,13 +133,13 @@ describe('Basics', function () {
     var stan = STAN.connect(cluster, id, PORT);
     stan.on('connect', function () {
       var stan2 = STAN.connect(cluster, id, PORT);
-      stan2.on('error', function() {
+      stan2.on('error', function () {
         wantTwo--;
         if (wantTwo === 0) {
           done();
         }
       });
-      stan2.on('close', function() {
+      stan2.on('close', function () {
         wantTwo--;
         if (wantTwo === 0) {
           done();
@@ -166,7 +166,6 @@ describe('Basics', function () {
       stan.publish(subject);
     });
   });
-
 
 
   it('should include the correct reply in the callback', function (done) {
@@ -509,14 +508,13 @@ describe('Basics', function () {
       stan.publish(subj, 'first', waitForSix);
       stan.publish(subj, 'second', waitForSix);
       stan.publish(subj, 'third', waitForSix);
-      setTimeout(function() {
+      setTimeout(function () {
         stan.publish(subj, 'fourth', waitForSix);
         stan.publish(subj, 'fifth', waitForSix);
         stan.publish(subj, 'sixth', waitForSix);
       }, 1500);
     });
   });
-
 
 
   it('subscribe after a specific time on last received', function (done) {
@@ -552,7 +550,7 @@ describe('Basics', function () {
       stan.publish(subj, 'first', waitForSix);
       stan.publish(subj, 'second', waitForSix);
       stan.publish(subj, 'third', waitForSix);
-      setTimeout(function() {
+      setTimeout(function () {
         stan.publish(subj, 'fourth', waitForSix);
         stan.publish(subj, 'fifth', waitForSix);
         stan.publish(subj, 'sixth', waitForSix);
@@ -701,7 +699,7 @@ describe('Basics', function () {
     stan.on('connect', function () {
       var sub1 = stan.subscribe(subj, opts);
       sub1.on('ready', function () {
-        for(var i=0; i < 2; i++) {
+        for (var i = 0; i < 2; i++) {
           stan.publish(subj);
         }
       });
@@ -709,24 +707,24 @@ describe('Basics', function () {
       var count = 0;
       sub1.on('message', function (msg) {
         count++;
-        if(count < 2) {
+        if (count < 2) {
           msg.ack();
         }
-        if(count === 2) {
-          setTimeout(function() {
+        if (count === 2) {
+          setTimeout(function () {
             stan.close();
           }, 100);
         }
       });
     });
 
-    stan.on('close', function() {
+    stan.on('close', function () {
       var stan2 = STAN.connect(cluster, clientID, PORT);
-      stan2.on('connect', function() {
+      stan2.on('connect', function () {
         var sub2 = stan2.subscribe(subj, opts);
         var second = false;
-        sub2.on('message', function(msg) {
-          if(!second) {
+        sub2.on('message', function (msg) {
+          if (!second) {
             second = true;
             msg.getSequence().should.be.equal(2);
             stan2.close();
@@ -736,4 +734,127 @@ describe('Basics', function () {
       });
     });
   });
+
+  it('sub close should stop getting messages', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    stan.on('connect', function () {
+      // server needs to support close requests
+      if(!stan.subCloseRequests || stan.subCloseRequests.length === 0) {
+        done("Server doesn't support close");
+      }
+
+      // fail the test if error
+      function errorHandler(err) {
+        done(err);
+      }
+
+      // store the sent messages keyed
+      var counter = {before: 0, after: 0};
+
+      // issue a close after the first message
+      function msgHandler(sub, key) {
+        var k = key;
+        return function (m) {
+          counter[k]++;
+          if(key === 'before') {
+            sub.close();
+          }
+        };
+      }
+
+      var subject = nuid.next();
+      function setupHandlers(sub, key) {
+        sub.on('message', msgHandler(sub, key));
+        sub.on('error', errorHandler);
+      }
+
+      var opts = stan.subscriptionOptions();
+      opts.setDeliverAllAvailable();
+      var sub = stan.subscribe(subject, '', opts);
+      setupHandlers(sub, "before");
+      // Fire one, flush, close, on close fire another, reconnect
+      sub.on('closed', function () {
+        counter.should.have.property('before', 1);
+        stan.publish(subject);
+        setTimeout(function() {
+          counter.should.have.property('before', 1);
+          done();
+        }, 250);
+      });
+      sub.on('ready', function () {
+        stan.publish(subject);
+      });
+    });
+  });
+
+  it('durable close should pause messages', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    stan.on('connect', function () {
+      // server needs to support close requests
+      if(!stan.subCloseRequests || stan.subCloseRequests.length === 0) {
+        done("Server doesn't support close");
+      }
+      // fail the test if error
+      function errorHandler(err) {
+        done(err);
+      }
+
+      // store the sent messages keyed
+      var counter = {before: 0, after: 0};
+
+      // issue a close after the first message
+      function msgHandler(sub, key) {
+        var k = key;
+        return function() {
+          counter[k]++;
+          if(key === 'before') {
+            sub.close();
+          }
+        };
+      }
+
+      function setupHandlers(sub, key) {
+        sub.on('message', msgHandler(sub, key));
+        sub.on('error', errorHandler);
+      }
+
+      var subject = nuid.next();
+
+
+      var opts = stan.subscriptionOptions();
+      opts.setDeliverAllAvailable();
+      opts.setDurableName("dur");
+      var sub = stan.subscribe(subject, '', opts);
+      setupHandlers(sub, "before");
+      // Fire one, flush, close, on close fire another, reconnect
+      sub.on('closed', function () {
+        counter.should.have.property('before', 1);
+        stan.publish(subject);
+        setTimeout(function () {
+          counter.should.have.property('before', 1);
+          restart();
+        }, 250);
+      });
+      sub.on('ready', function () {
+        stan.publish(subject);
+      });
+
+      function restart() {
+        var opts = stan.subscriptionOptions();
+        opts.setDeliverAllAvailable();
+        opts.setDurableName("dur");
+        var sub = stan.subscribe(subject, '', opts);
+        setupHandlers(sub, "after");
+
+        sub.on('ready', function() {
+          stan.publish(subject);
+          setTimeout(function() {
+            counter.should.have.property('after', 2);
+            done();
+          }, 250);
+        });
+      }
+    });
+  });
 });
+

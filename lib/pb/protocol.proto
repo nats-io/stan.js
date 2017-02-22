@@ -57,11 +57,12 @@ message ConnectRequest {
 
 // Response to a client connect
 message ConnectResponse {
-  string pub_prefix     = 1;   // Prefix to use when publishing to this STAN cluster
-  string sub_requests   = 2;   // Subject to use for subscription requests
-  string unsub_requests = 3;   // Subject to use for unsubscribe requests
-  string close_requests = 4;   // Subject for closing the stan connection
-  string error         = 5;   // err string, empty/omitted if no error
+  string pub_prefix         = 1;   // Prefix to use when publishing to this STAN cluster
+  string sub_requests       = 2;   // Subject to use for subscription requests
+  string unsub_requests     = 3;   // Subject to use for unsubscribe requests
+  string close_requests     = 4;   // Subject for closing the stan connection
+  string error              = 5;   // err string, empty/omitted if no error
+  string sub_close_requests = 6;   // Subject to use for subscription close requests
 
   string public_key     = 100; // Possibly used to sign acks, etc.
 }
@@ -77,16 +78,16 @@ enum StartPosition {
 
 // Protocol for a client to subscribe
 message SubscriptionRequest {
-  string        client_id       = 1;  // ClientID
-  string        subject        = 2;  // Formal subject to subscribe to, e.g. foo.bar
-  string        q_group         = 3;  // Optional queue group
-  string        inbox          = 4;  // Inbox subject to deliver messages on
-  int32         max_in_flight    = 5;  // Maximum inflight messages without an ack allowed
+  string        client_id         = 1;  // ClientID
+  string        subject           = 2;  // Formal subject to subscribe to, e.g. foo.bar
+  string        q_group           = 3;  // Optional queue group
+  string        inbox             = 4;  // Inbox subject to deliver messages on
+  int32         max_in_flight     = 5;  // Maximum inflight messages without an ack allowed
   int32         ack_wait_in_secs  = 6;  // Timeout for receiving an ack from the client
-  string        durable_name    = 7;  // Optional durable name which survives client restarts
-  StartPosition start_position  = 10; // Start position
-  uint64        start_sequence  = 11; // Optional start sequence number
-  int64         start_time_delta = 12; // Optional start time
+  string        durable_name      = 7;  // Optional durable name which survives client restarts
+  StartPosition start_position    = 10; // Start position
+  uint64        start_sequence    = 11; // Optional start sequence number
+  int64         start_time_delta  = 12; // Optional start time
 }
 
 // Response for SubscriptionRequest and UnsubscribeRequests
@@ -98,8 +99,8 @@ message SubscriptionResponse {
 // Protocol for a clients to unsubscribe. Will return a SubscriptionResponse
 message UnsubscribeRequest {
   string client_id    = 1; // ClientID
-  string subject     = 2; // subject for the subscription
-  string inbox       = 3; // Inbox subject to identify subscription
+  string subject      = 2; // subject for the subscription
+  string inbox        = 3; // Inbox subject to identify subscription
   string durable_name = 4; // Optional durable name which survives client restarts
 }
 
