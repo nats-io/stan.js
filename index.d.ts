@@ -77,6 +77,11 @@ declare class Message {
 
 declare class Subscription extends events.EventEmitter {
     /**
+     * Returns true if the subscription has been closed or unsubscribed from.
+     */
+    isClosed():boolean;
+
+    /**
      * Unregisters the subscription from the streaming server.
      */
     unsubscribe();
