@@ -394,6 +394,22 @@ describe('Basics', function () {
     });
   });
 
+  it('unsubscribe marks it closed', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    stan.on('connect', function () {
+      var sub = stan.subscribe(nuid.next());
+      sub.on('ready', function () {
+        sub.unsubscribe();
+        if(! sub.isClosed()) {
+          done("Subscription should have been closed");
+        }
+      });
+      sub.on('unsubscribed', function () {
+        done();
+      });
+    });
+  });
+
   it('subscribe starting on second', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var subj = nuid.next();
