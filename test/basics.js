@@ -757,6 +757,8 @@ describe('Basics', function () {
         return function (m) {
           counter[k]++;
           if(key === 'before') {
+            // ack before the close
+            m.ack();
             sub.close();
           }
         };
@@ -805,9 +807,11 @@ describe('Basics', function () {
       // issue a close after the first message
       function msgHandler(sub, key) {
         var k = key;
-        return function() {
+        return function(m) {
           counter[k]++;
           if(key === 'before') {
+            // this message has to be manually ack'ed or the ack won't be sent
+            m.ack();
             sub.close();
           }
         };
@@ -819,7 +823,6 @@ describe('Basics', function () {
       }
 
       var subject = nuid.next();
-
 
       var opts = stan.subscriptionOptions();
       opts.setDeliverAllAvailable();
