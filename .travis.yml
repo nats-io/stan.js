@@ -4,13 +4,15 @@ sudo: false
 node_js:
   - "0.12"
   - "4"
-  - "5"
   - "6"
+  - "7"
 
 before_script:
-  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.2.2/nats-streaming-server-linux-amd64.zip -O nats-streaming-server-amd64.zip
-  - unzip nats-streaming-server-amd64.zip
-  - mv nats-streaming-server-linux-amd64 nats-streaming-server
+  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.3.8/nats-streaming-server-v0.3.8-linux-amd64.zip -O tmp.zip
+  - unzip tmp.zip
+  - mv nats-streaming-server-v0.3.8-linux-amd64 nats-streaming-server
+  - mv nats-streaming-server/nats-streaming-server-v0.3.8 nats-streaming-server/nats-streaming-server
+
 
 after_success:
   - npm run coveralls

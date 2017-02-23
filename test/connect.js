@@ -3,7 +3,7 @@
 'use strict';
 
 var STAN = require ('../lib/stan.js'),
-    nuid = require('../lib/nuid'),
+    nuid = require('nuid'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
     timers = require('timers');

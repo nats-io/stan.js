@@ -116,6 +116,20 @@ var durableSub = stan.subscribe('foo', opts);
 durableSub.on('message', function(msg) {
   console.log('Received a message: ' + msg.getData());
 });
+
+//... 
+// client suspends durable subscription
+//
+durableSub.close();
+
+//...
+// client resumes durable subscription
+//
+durableSub = stan.subscribe('foo', opts);
+durableSub.on('message', function(msg) {
+  console.log('Received a message: ' + msg.getData());
+});
+
 // ...
 // client receives message sequence 1-40, and disconnects
 stan.close();

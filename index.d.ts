@@ -85,6 +85,15 @@ declare class Subscription extends events.EventEmitter {
      * Unregisters the subscription from the streaming server.
      */
     unsubscribe();
+
+    /**
+     * Close removes the subscriber from the server, but unlike the Subscription#unsubscribe(),
+     * the durable interest is not removed. If the client has connected to a server
+     * for which this feature is not available, Subscription#Close() will emit a
+     * Subscription#error(NO_SERVER_SUPPORT) error. Note that this affects durable clients only.
+     * If called on a non-durable subscriber, this is equivalent to Subscription#close()
+     */
+    close();
 }
 
 /**
