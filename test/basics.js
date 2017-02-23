@@ -376,7 +376,7 @@ describe('Basics', function () {
     });
   });
 
-  it('subscribe twice is invalid', function (done) {
+  it('unsubscribe twice is invalid', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     stan.on('connect', function () {
       var sub = stan.subscribe(nuid.next());
@@ -390,6 +390,22 @@ describe('Basics', function () {
         if (err.message === 'stan: invalid subscription') {
           done();
         }
+      });
+    });
+  });
+
+  it('unsubscribe marks it closed', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), PORT);
+    stan.on('connect', function () {
+      var sub = stan.subscribe(nuid.next());
+      sub.on('ready', function () {
+        sub.unsubscribe();
+        if(! sub.isClosed()) {
+          done("Subscription should have been closed");
+        }
+      });
+      sub.on('unsubscribed', function () {
+        done();
       });
     });
   });
