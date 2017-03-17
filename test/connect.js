@@ -6,7 +6,8 @@ var STAN = require ('../lib/stan.js'),
     nuid = require('nuid'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
-    timers = require('timers');
+    timers = require('timers'),
+    net = require('net');
 
 describe('Basic Connectivity', function() {
 
@@ -221,6 +222,31 @@ describe('Basic Connectivity', function() {
        }
       });
       should(contains).equal(servers.length);
+      done();
+    });
+  });
+
+
+  it('reconnect should provide stan connection', function (done) {
+    this.timeout(15000);
+    var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':1000});
+    var reconnected = false;
+    stan.on('connect', function (sc) {
+      should(stan).equal(sc, 'stan connect did not pass stan connection');
+      process.nextTick(function () {
+        ssc.stop_server(server);
+      });
+    });
+    stan.on('reconnecting', function () {
+      if (!reconnected) {
+        reconnected = true;
+        server = ssc.start_server(PORT, function () {
+        });
+      }
+    });
+    stan.on('reconnect', function (sc) {
+      should(stan).equal(sc, 'stan reconnect did not pass stan connection');
+      stan.close();
       done();
     });
   });
