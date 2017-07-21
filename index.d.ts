@@ -71,7 +71,7 @@ declare class Message {
      * Acks the message, note this method shouldn't be called unless
      * the manualAcks option was set on the subscription.
      */
-    ack();
+    ack(): void;
 }
 
 
@@ -84,7 +84,7 @@ declare class Subscription extends events.EventEmitter {
     /**
      * Unregisters the subscription from the streaming server.
      */
-    unsubscribe();
+    unsubscribe(): void;
 
     /**
      * Close removes the subscriber from the server, but unlike the Subscription#unsubscribe(),
@@ -93,7 +93,7 @@ declare class Subscription extends events.EventEmitter {
      * Subscription#error(NO_SERVER_SUPPORT) error. Note that this affects durable clients only.
      * If called on a non-durable subscriber, this is equivalent to Subscription#close()
      */
-    close();
+    close(): void;
 }
 
 /**
@@ -110,7 +110,7 @@ declare class Stan extends events.EventEmitter {
 	/**
 	 * Close the connection to the server.
 	 */
-	close();
+	close(): void;
 
     /**
      * Publishes a message to the streaming server with the specified subject and data.
