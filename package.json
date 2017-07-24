@@ -1,6 +1,6 @@
 {
   "name": "node-nats-streaming",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "Node.js client for NATS Streaming, a lightweight, high-performance cloud native messaging system",
   "keywords": [
     "nats",
@@ -44,20 +44,20 @@
     "node": ">= 0.10.0"
   },
   "dependencies": {
-    "google-protobuf": "^3.0.0-alpha.6.2",
-    "nats": ">= 0.7.10",
-    "nuid": ">=0.6.8"
+    "google-protobuf": "^3.3.0",
+    "nats": ">= 0.7.20",
+    "nuid": ">=0.6.14"
   },
   "devDependencies": {
-    "jshint": "2.9.x",
-    "jshint-stylish": "2.2.x",
-    "mocha": "3.0.x",
-    "mocha-multi": "0.9.x",
-    "mocha-lcov-reporter": "1.2.x",
-    "dependency-check": "2.6.x",
-    "istanbul": "0.4.x",
     "coveralls": "^2.11.2",
-    "should": ">= 9.0.0"
+    "dependency-check": "2.6.x",
+    "istanbul": "^0.4.5",
+    "jshint": "^2.9.5",
+    "jshint-stylish": "^2.2.1",
+    "mocha": "^3.0.2",
+    "mocha-lcov-reporter": "1.2.x",
+    "mocha-multi": "^0.9.1",
+    "should": "^11.2.1"
   },
   "typings": "./index.d.ts"
 }

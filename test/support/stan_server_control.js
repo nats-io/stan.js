@@ -1,10 +1,12 @@
 /* jslint node: true */
 'use strict';
 
-var spawn = require('child_process').spawn;
-var net = require('net');
+var spawn = require('child_process').spawn,
+net = require('net'),
+os = require('os');
 
 var SERVER = (process.env.TRAVIS) ? 'nats-streaming-server/nats-streaming-server' : 'nats-streaming-server';
+var LOG_DIR = (process.env.TRAVIS) ? 'nats-streaming-server/logs/' : os.tmpdir();
 var DEFAULT_PORT = 4222;
 
 exports.start_server = function(port, opt_flags, done) {
@@ -15,7 +17,7 @@ exports.start_server = function(port, opt_flags, done) {
     done = opt_flags;
     opt_flags = null;
   }
-  var flags = ['-p', port];
+  var flags = ['-p', port, '-SDV','-log', LOG_DIR + 'stan_log_'+port+'.log'];
 
   if (opt_flags) {
     flags = flags.concat(opt_flags);

@@ -7,7 +7,9 @@ var STAN = require ('../lib/stan.js'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
     timers = require('timers'),
-    net = require('net');
+    net = require('net'),
+    os = require('os'),
+    path = require('path');
 
 describe('Basic Connectivity', function() {
 
@@ -16,8 +18,10 @@ describe('Basic Connectivity', function() {
   var uri = 'nats://localhost:' + PORT;
   var server;
 
+  var serverDir = path.join(os.tmpdir(), nuid.next());
+
   before(function(done) {
-    server = ssc.start_server(PORT, function() {
+    server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function() {
       timers.setTimeout(function() {
         done();
       }, 250);
@@ -228,6 +232,7 @@ describe('Basic Connectivity', function() {
 
 
   it('reconnect should provide stan connection', function (done) {
+    // done = DoneSilencer(done);
     this.timeout(15000);
     var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':1000});
     var reconnected = false;
@@ -240,14 +245,30 @@ describe('Basic Connectivity', function() {
     stan.on('reconnecting', function () {
       if (!reconnected) {
         reconnected = true;
-        server = ssc.start_server(PORT, function () {
+        server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function () {
         });
       }
     });
     stan.on('reconnect', function (sc) {
       should(stan).equal(sc, 'stan reconnect did not pass stan connection');
-      stan.close();
-      done();
+        stan.close();
+        done();
+    });
+  });
+
+  it('nats close, should not close stan', function (done) {
+    this.timeout(15000);
+    var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':20});
+    stan.on('close', function() {
+      (stan.nc.connected).should.equal(false, "nc should be closed");
+      (stan.isClosed()).should.equal(false, "sc should not be closed");
+        done();
+    });
+    stan.on('connect', function (sc) {
+      should(stan).equal(sc, 'stan connect did not pass stan connection');
+      process.nextTick(function() {
+        server.kill();
+      });
     });
   });
 });

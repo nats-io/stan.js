@@ -8,11 +8,14 @@ node_js:
   - "7"
 
 before_script:
-  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.3.8/nats-streaming-server-v0.3.8-linux-amd64.zip -O tmp.zip
+  - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.5.0/nats-streaming-server-v0.5.0-linux-amd64.zip -O tmp.zip
   - unzip tmp.zip
-  - mv nats-streaming-server-v0.3.8-linux-amd64 nats-streaming-server
-  - mv nats-streaming-server/nats-streaming-server-v0.3.8 nats-streaming-server/nats-streaming-server
+  - mv nats-streaming-server-v0.5.0-linux-amd64 nats-streaming-server
+  - mkdir nats-streaming-server/logs
 
 
 after_success:
   - npm run coveralls
+
+after_failure:
+  - cat nats-streaming-server/logs/*.log
