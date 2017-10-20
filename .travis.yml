@@ -2,10 +2,9 @@ language: node_js
 sudo: false
 
 node_js:
-  - "0.12"
   - "4"
   - "6"
-  - "7"
+  - "8"
 
 before_script:
   - wget https://github.com/nats-io/nats-streaming-server/releases/download/v0.5.0/nats-streaming-server-v0.5.0-linux-amd64.zip -O tmp.zip
@@ -14,8 +13,10 @@ before_script:
   - mkdir nats-streaming-server/logs
 
 
-after_success:
-  - npm run coveralls
+script:
+  - if [[ "$TRAVIS_NODE_VERSION" == 4 ]]; then npm test; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == 6 ]]; then npm test; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == 8 ]]; then npm run coveralls; fi
 
 after_failure:
   - cat nats-streaming-server/logs/*.log
