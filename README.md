@@ -209,6 +209,12 @@ NATS Streaming provides a connection option called `maxPubAcksInflight` that eff
 Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `SubscriptionOptions#setMaxInFlight(number)`. This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription.
 When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit.
 
+## Supported Node Versions
+
+Support policy for Nodejs versions follows 
+[Nodejs release support]( https://github.com/nodejs/Release).
+We will support and build node-nats-streaming on even Nodejs versions that are current 
+or in maintenance.
 
 ## License
 
