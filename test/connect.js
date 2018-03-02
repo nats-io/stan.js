@@ -7,7 +7,6 @@ var STAN = require ('../lib/stan.js'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
     timers = require('timers'),
-    net = require('net'),
     os = require('os'),
     path = require('path');
 
@@ -20,12 +19,16 @@ describe('Basic Connectivity', function() {
 
   var serverDir = path.join(os.tmpdir(), nuid.next());
 
-  before(function(done) {
+  function startServer(done) {
     server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function() {
       timers.setTimeout(function() {
         done();
       }, 250);
     });
+  }
+
+  before(function(done) {
+    startServer(done);
   });
 
   // Shutdown our server after we are done
@@ -45,6 +48,20 @@ describe('Basic Connectivity', function() {
       connected = true;
       stan.close();
     });
+  });
+
+  it('on connect inbox should be set', function(done){
+      var stan = STAN.connect(cluster, nuid.next(), PORT);
+      stan.on('connect', function() {
+        stan.pubPrefix.should.be.ok();
+        stan.subRequests.should.be.ok();
+        stan.unsubRequests.should.be.ok();
+        stan.subCloseRequests.should.be.ok();
+        stan.closeRequests.should.be.ok();
+
+        stan.close();
+        done();
+      });
   });
 
   it('should perform basic connect with uri', function(done){
@@ -262,13 +279,31 @@ describe('Basic Connectivity', function() {
     stan.on('close', function() {
       (stan.nc.connected).should.equal(false, "nc should be closed");
       (stan.isClosed()).should.equal(false, "sc should not be closed");
-        done();
+      startServer(done);
     });
     stan.on('connect', function (sc) {
       should(stan).equal(sc, 'stan connect did not pass stan connection');
       process.nextTick(function() {
         server.kill();
       });
+    });
+  });
+
+  it('sub after disconnect raises error', function (done) {
+    this.timeout(10000);
+    var stan = STAN.connect(cluster, nuid.next(), {'url': 'nats://localhost:' + PORT, 'reconnectTimeWait': 1000});
+    stan.on('connect', function () {
+      setTimeout(function () {
+        stan.subscribe("are.you.there", function (m) {});
+      }, 250);
+      setTimeout(function () {
+        ssc.stop_server(server);
+      }, 0);
+    });
+
+    stan.on('timeout', function (err) {
+      // restart the server for others
+      startServer(done);
     });
   });
 });
