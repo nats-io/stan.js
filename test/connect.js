@@ -7,7 +7,6 @@ var STAN = require ('../lib/stan.js'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
     timers = require('timers'),
-    net = require('net'),
     os = require('os'),
     path = require('path');
 
@@ -20,12 +19,16 @@ describe('Basic Connectivity', function() {
 
   var serverDir = path.join(os.tmpdir(), nuid.next());
 
-  before(function(done) {
+  function startServer(done) {
     server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function() {
       timers.setTimeout(function() {
         done();
       }, 250);
     });
+  }
+
+  before(function(done) {
+    startServer(done);
   });
 
   // Shutdown our server after we are done
@@ -276,7 +279,7 @@ describe('Basic Connectivity', function() {
     stan.on('close', function() {
       (stan.nc.connected).should.equal(false, "nc should be closed");
       (stan.isClosed()).should.equal(false, "sc should not be closed");
-        done();
+      startServer(done);
     });
     stan.on('connect', function (sc) {
       should(stan).equal(sc, 'stan connect did not pass stan connection');
@@ -299,12 +302,8 @@ describe('Basic Connectivity', function() {
     });
 
     stan.on('timeout', function (err) {
-      console.log('timeout', err);
       // restart the server for others
-      server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function () {
-      });
-      stan.close();
-      done();
+      startServer(done);
     });
   });
 });
