@@ -47,6 +47,20 @@ describe('Basic Connectivity', function() {
     });
   });
 
+  it('on connect inbox should be set', function(done){
+      var stan = STAN.connect(cluster, nuid.next(), PORT);
+      stan.on('connect', function() {
+        stan.pubPrefix.should.be.ok();
+        stan.subRequests.should.be.ok();
+        stan.unsubRequests.should.be.ok();
+        stan.subCloseRequests.should.be.ok();
+        stan.closeRequests.should.be.ok();
+
+        stan.close();
+        done();
+      });
+  });
+
   it('should perform basic connect with uri', function(done){
     var stan = STAN.connect(cluster, nuid.next(), uri);
    var connected = false;
