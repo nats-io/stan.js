@@ -285,4 +285,26 @@ describe('Basic Connectivity', function() {
       });
     });
   });
+
+  it('sub after disconnect raises error', function (done) {
+    this.timeout(10000);
+    var stan = STAN.connect(cluster, nuid.next(), {'url': 'nats://localhost:' + PORT, 'reconnectTimeWait': 1000});
+    stan.on('connect', function () {
+      setTimeout(function () {
+        stan.subscribe("are.you.there", function (m) {});
+      }, 250);
+      setTimeout(function () {
+        ssc.stop_server(server);
+      }, 0);
+    });
+
+    stan.on('timeout', function (err) {
+      console.log('timeout', err);
+      // restart the server for others
+      server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function () {
+      });
+      stan.close();
+      done();
+    });
+  });
 });
