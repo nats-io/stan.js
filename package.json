@@ -21,11 +21,10 @@
   "bugs": {
     "url": "https://github.com/nats-io/node-nats-streaming/issues"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": false,
   "author": {
-    "name": "Alberto Ricart",
-    "email": "alberto.ricart@apcera.com"
+    "name": "The NATS Authors"
   },
   "contributors": [],
   "main": "./index.js",
