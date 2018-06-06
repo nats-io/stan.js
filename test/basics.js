@@ -331,7 +331,7 @@ describe('Basics', function () {
   it('maxPubAcksInflight should toss on error', function (done) {
     var opts = {maxPubAcksInflight: 3, uri: uri};
     var stan = STAN.connect(cluster, nuid.next(), opts);
-    var buf = new Buffer('HelloWorld', 'utf8');
+    var buf = Buffer.from('HelloWorld', 'utf8');
     var failed = false;
     stan.on('connect', function () {
       for (var i = 0; i < 10; i++) {
