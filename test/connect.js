@@ -268,13 +268,18 @@ describe('Basic Connectivity', function() {
     this.timeout(15000);
     var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':1000});
     var reconnected = false;
+    var disconnected = false;
     stan.on('connect', function (sc) {
       should(stan).equal(sc, 'stan connect did not pass stan connection');
       process.nextTick(function () {
         ssc.stop_server(server);
       });
     });
+    stan.on('disconnect', function() {
+      disconnected = true;
+    });
     stan.on('reconnecting', function () {
+      // should have emitted a disconnect
       if (!reconnected) {
         reconnected = true;
         server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function () {
