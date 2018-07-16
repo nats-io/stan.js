@@ -1,6 +1,6 @@
 {
   "name": "node-nats-streaming",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "Node.js client for NATS Streaming, a lightweight, high-performance cloud native messaging system",
   "keywords": [
     "nats",
@@ -44,8 +44,8 @@
   },
   "dependencies": {
     "google-protobuf": "^3.3.0",
-    "nats": "^0.8.10",
-    "nuid": "^0.6.14"
+    "nats": "^1.0.0",
+    "nuid": "^1.0.0"
   },
   "devDependencies": {
     "coveralls": "^2.11.2",
