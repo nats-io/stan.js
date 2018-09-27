@@ -4,9 +4,10 @@ Node NATS Streaming is an extremely performant, lightweight reliable streaming p
 
 [![license](https://img.shields.io/github/license/nats-io/node-nats-streaming.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Travis branch](https://img.shields.io/travis/nats-io/node-nats-streaming/master.svg)]()
-[![Coveralls github branch](https://img.shields.io/coveralls/github/nats-io/node-nats-streaming/master.svg)]()
-[![npm](https://img.shields.io/npm/v/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
+[![Coverage Status](https://coveralls.io/repos/github/nats-io/node-nats-streaming/badge.svg?branch=master)](https://coveralls.io/github/nats-io/node-nats-streaming?branch=master)[![npm](https://img.shields.io/npm/v/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
 [![npm](https://img.shields.io/npm/dt/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
+
+
 
 
 NATS Streaming provides the following high-level feature set:

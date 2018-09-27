@@ -3,7 +3,7 @@ lint:
 	./node_modules/.bin/jshint ./test ./index.js ./lib/stan.js
 
 test:
-	@NODE_ENV=test ./node_modules/.bin/mocha -c\
+	@NODE_ENV=test ./node_modules/.bin/mocha --exit -c\
 	  --reporter list \
 	  --slow 5000 \
 	  --timeout 10000
