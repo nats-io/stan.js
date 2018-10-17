@@ -141,6 +141,7 @@ declare class Stan extends events.EventEmitter {
      * @param qGroup
      * @param opts
      */
+    subscribe(subject: string, opts?: SubscriptionOptions): Subscription
     subscribe(subject: string, qGroup: string, opts?: SubscriptionOptions): Subscription
 
     /**
