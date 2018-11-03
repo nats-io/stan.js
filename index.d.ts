@@ -115,7 +115,7 @@ declare class Subscription extends events.EventEmitter {
  * @param err - undefined if there is no error processing the message
  * @param guid - the guid correlating the message with the callback invocation.
  */
-interface AckHandlerCallback { (err: Error, guid: string): void; }
+interface AckHandlerCallback { (err: Error | undefined, guid: string): void; }
 
 
 
