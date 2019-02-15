@@ -183,6 +183,31 @@ describe('Basics', function () {
   });
 
 
+  it('json', function (done) {
+      var stan = STAN.connect(cluster, nuid.next(), PORT);
+      stan.on('connect', function () {
+          var subj = nuid.next();
+
+          var opts = stan.subscriptionOptions();
+          opts.setStartAt(STAN.StartPosition.FIRST);
+
+          var sub = stan.subscribe(subj, opts);
+          sub.on('message', function (msg) {
+              var v = JSON.parse(msg.getData());
+              v.should.have.property("a", "b");
+              sub.unsubscribe();
+          });
+
+          sub.on('unsubscribed', function() {
+              stan.close();
+              done();
+          });
+
+          stan.publish(subj, JSON.stringify({a: "b"}));
+      });
+  });
+
+
   it('should include the correct reply in the callback', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var count = 0;
@@ -611,7 +636,7 @@ describe('Basics', function () {
   });
 
 
-  it('subscribe all available', function (done) {
+    it('subscribe all available', function (done) {
     var stan = STAN.connect(cluster, nuid.next(), PORT);
     var subj = nuid.next();
     var count = 0;

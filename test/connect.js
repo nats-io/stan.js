@@ -65,6 +65,19 @@ describe('Basic Connectivity', function() {
     });
   });
 
+  it('should connect with port option', function(done){
+    var stan = STAN.connect(cluster, nuid.next(), {port: PORT});
+    var connected = false;
+    stan.on('close', function() {
+      connected.should.equal(true);
+      done();
+    });
+    stan.on('connect', function() {
+      connected = true;
+      stan.close();
+    });
+  });
+
   it('on connect inbox should be set', function(done){
       var stan = STAN.connect(cluster, nuid.next(), PORT);
       stan.on('connect', function() {
