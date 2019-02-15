@@ -2,15 +2,14 @@ language: node_js
 sudo: false
 
 node_js:
-  - "6"
-  - "8"
   - "10"
+  - "11"
 
 git:
   depth: false
 
 env:
-  - STAN_VERSION=v0.11.0
+  - STAN_VERSION=v0.12.0
 
 before_script:
   - wget "https://github.com/nats-io/nats-streaming-server/releases/download/$STAN_VERSION/nats-streaming-server-$STAN_VERSION-linux-amd64.zip" -O tmp.zip
@@ -23,7 +22,7 @@ script:
   - npm test
 
 after_success:
-  - if [[ "$TRAVIS_NODE_VERSION" == 10 ]]; then npm run coveralls; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == 11 ]]; then npm run coveralls; fi
 
 after_failure:
   - cat nats-streaming-server/logs/*.log
