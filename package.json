@@ -1,6 +1,6 @@
 {
   "name": "node-nats-streaming",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "description": "Node.js client for NATS Streaming, a lightweight, high-performance cloud native messaging system",
   "keywords": [
     "nats",
@@ -32,7 +32,7 @@
     "coveralls": "cat ./reports/coverage/lcov.info | coveralls",
     "depcheck": "dependency-check . lib/* lib/pb/*",
     "depcheck:unused": "dependency-check ./package.json --unused --no-dev lib/*.js",
-    "gen": "protoc --js_out=import_style=commonjs,library=lib/pb/protocol_pb,binary:. lib/pb/protocol.proto",
+    "gen": "protoc --js_out=import_style=commonjs,binary:. lib/pb/protocol.proto",
     "lint": "jshint --reporter node_modules/jshint-stylish lib/*.js test/*.js test/support/*.js examples/*.js",
     "npm-publish": "npm publish https://github.com/nats-io/node-nats-streaming.git --access public",
     "test": "npm run depcheck && npm run depcheck:unused && npm run lint && npm run test:unit",
@@ -42,15 +42,15 @@
     "node": ">= 6.0.0"
   },
   "dependencies": {
-    "google-protobuf": "^3.3.0",
-    "nats": "^1.0.0",
+    "google-protobuf": "^3.6.1",
+    "nats": "^1.2.2",
     "nuid": "^1.0.0"
   },
   "devDependencies": {
     "coveralls": "^3.0.2",
     "dependency-check": "2.6.x",
     "istanbul": "^0.4.5",
-    "jshint": "^2.9.6",
+    "jshint": "^2.10.1",
     "jshint-stylish": "^2.2.1",
     "mocha": "^5.2.0",
     "mocha-lcov-reporter": "1.2.x",
