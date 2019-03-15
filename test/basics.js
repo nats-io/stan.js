@@ -899,5 +899,38 @@ describe('Basics', function () {
       }
     });
   });
+
+
+  it('should not fail if close is called when it never connected', function (done) {
+    var stan = STAN.connect(cluster, nuid.next(), {
+      port: 1111,
+      reconnect: true,
+      reconnectTimeWait: 250,
+      waitOnFirstConnect: true
+    });
+
+    stan.on('connect', function () {
+      should.fail("shouldn't have connected");
+    });
+
+    var count = 0;
+    stan.on('reconnecting', function() {
+      if(count === 0) {
+        process.nextTick(function () {
+          stan.close();
+        });
+      }
+      count++;
+    });
+
+    stan.on('error', function(ex) {
+      should.fail("shouldn't have gotten this error" + ex);
+    });
+
+    setTimeout(function() {
+      count.should.be.greaterThan(2);
+      done();
+    }, 1500);
+  });
 });
 
