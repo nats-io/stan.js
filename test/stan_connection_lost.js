@@ -27,44 +27,57 @@ timers = require('timers');
 describe('Stan Server Ping Specific', function() {
 
   var PORT = 9876;
+  var NATS_A = 6789;
+  var NATS_A_CLUSTER = 6790;
+  var NATS_B = 6791;
+  var NATS_B_CLUSTER = 6792;
+
   var cluster = 'test-cluster';
-  var uri = 'nats://localhost:' + PORT;
-  var server = null;
+  var uri = 'nats://localhost:' + NATS_A;
+  var stan_server = null;
+  var natsA = null;
+  var natsB = null;
 
   beforeEach(function (done) {
-    server = ssc.start_server(PORT, function () {
-      timers.setTimeout(function () {
-        done();
-      }, 250);
+    natsA = ssc.start_server(NATS_A, ['-cid', 'not-test-cluster', '--cluster', 'nats://localhost:' + NATS_A_CLUSTER], function () {
+      natsB = ssc.start_server(NATS_B, ['-cid', 'not-test-cluster2', '--cluster', 'nats://localhost:' + NATS_B_CLUSTER, '--routes', 'nats://localhost:' + NATS_A_CLUSTER], function() {
+        stan_server = ssc.start_server(PORT, ['-ns', 'nats://localhost:' + NATS_A], function () {
+          timers.setTimeout(function () {
+            done();
+          }, 250);
+        });
+      });
     });
   });
 
   // Shutdown our server after we are done
   afterEach(function (done) {
-    if (server) {
-      server.kill();
-      server = null;
-      timers.setTimeout(function () {
-        done();
-      }, 250);
-    } else {
-      done();
+    if (stan_server) {
+      stan_server.kill();
     }
+    if (natsA) {
+      natsA.kill();
+    }
+    if (natsB) {
+      natsB.kill();
+    }
+    setTimeout(done, 250);
   });
 
 
-  it('Should get a "connection_lost" event if the server goes away', function (done) {
-    this.timeout(5000);
+  it('should get a "connection_lost" event if the server goes away', function (done) {
+    this.timeout(10000);
     var t1, t2;
     var stan = STAN.connect(cluster, nuid.next(), {
       url: uri,
       pingInterval: 1000,
       pingMaxOut: 2
     });
+    stan.on('error', function(err) {
+      console.log('ignoring', err);
+    });
     stan.on('connection_lost', function () {
       t2 = new Date().getTime();
-      stan.close();
-
       var duration = t2 - t1;
       duration.should.be.greaterThanOrEqual((stan.pingMaxOut + 1) * stan.pingInterval);
       duration.should.be.lessThanOrEqual((stan.pingMaxOut + 2) * stan.pingInterval);
@@ -72,13 +85,13 @@ describe('Stan Server Ping Specific', function() {
     });
     stan.on('connect', function () {
       t1 = new Date().getTime();
-      server.kill();
-      server = null;
+      stan_server.kill();
+      stan_server = null;
     });
   });
 
-  it('Should get a "connection_lost" event if the server cycles and looses state', function (done) {
-    this.timeout(5000);
+  it('should get a "connection_lost" event if the server cycles and looses state', function (done) {
+    this.timeout(10000);
     var connected = false;
     var disconnected = false;
     var reconnecting = false;
@@ -86,23 +99,16 @@ describe('Stan Server Ping Specific', function() {
     var stan = STAN.connect(cluster, nuid.next(), {
       url: uri,
       pingInterval: 1000,
-      pingMaxOut: 4
+      pingMaxOut: 3
     });
     stan.on('connection_lost', function () {
-      stan.close();
-
-      should.equal(connected, true);
-      should.equal(disconnected, true);
-      should.equal(reconnecting, true);
-      should.equal(reconnected, true);
-
       done();
     });
     stan.on('connect', function () {
-      server.kill();
-      server = null;
+      stan_server.kill();
+      stan_server = null;
       timers.setTimeout(function () {
-        server = ssc.start_server(PORT);
+        stan_server = ssc.start_server(PORT);
       }, 250);
 
       connected = true;
@@ -118,4 +124,78 @@ describe('Stan Server Ping Specific', function() {
     });
   });
 
+  it('should get a "connection_lost" when replaced', function(done) {
+    this.timeout(10000);
+
+
+    var id = nuid.next();
+    function connectClient(url, name) {
+      var sc = STAN.connect(cluster, id, {
+        url: url,
+        pingInterval: 1000,
+        pingMaxOut: 10,
+        maxReconnectAttempts: -1,
+        reconnectTimeWait: 1000,
+        waitOnFirstConnect: true,
+        name: name
+      });
+
+      // blank out the server updates, we want the client
+      // to only connect to the given server while allowing
+      // stan to know about cluster topology
+      sc.processServerUpdate = function(){};
+
+      sc.on('connect', function() {
+        // console.log(sc.nc.options.name, 'connected', sc.nc.servers[0].toString());
+        var count = sc.nc.servers.length;
+        if(count > 1) {
+          sc.nc.servers.splice(1, count-1);
+        }
+      });
+
+      sc.on('disconnect', function() {
+        // console.log(sc.nc.options.name, "disconnect");
+      });
+
+      sc.on('reconnected', function() {
+        // console.log(sc.nc.options.name, "reconnect", sc.nc.servers[0].toString());
+      });
+
+      sc.on('connection_lost', function(err) {
+        var name = sc.nc.options.name;
+        // console.log(name, "connection_lost", sc.nc.servers[0].toString(), err);
+        name.should.be.equal("sc1");
+        should(gotAckError).be.true();
+        err.should.be.equal("client has been replaced or is no longer registered");
+        if(sc2 != null) {
+          sc2.close();
+        }
+        done();
+      });
+
+      return sc;
+    }
+
+    var sc1 = connectClient("nats://localhost:" + NATS_A, "sc1");
+    var sc2 = null;
+    var gotAckError = false;
+
+    sc1.on('connect', function () {
+      setTimeout(function() {
+        natsA.kill();
+        sc1.publish("hello", "world", function (err) {
+          err.should.be.equal("client has been replaced or is no longer registered");
+          gotAckError = true;
+        });
+      }, 1000);
+    });
+    sc1.on('disconnect', function () {
+      if(!sc2) {
+        sc2 = connectClient("nats://localhost:" + NATS_B, "sc2");
+        sc2.on('connect', function() {
+          natsA = ssc.start_server(NATS_A, ['-cid', 'not-test-cluster', '--cluster', 'nats://localhost:' + NATS_A_CLUSTER]);
+        });
+      }
+    });
+  });
 });
