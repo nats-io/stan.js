@@ -279,7 +279,11 @@ describe('Basic Connectivity', function() {
   it('reconnect should provide stan connection', function (done) {
     // done = DoneSilencer(done);
     this.timeout(15000);
-    var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':1000});
+    var stan = STAN.connect(cluster, nuid.next(), {
+      url:'nats://localhost:' + PORT,
+      reconnectTimeWait:1000,
+      maxReconnectAttempts: 10
+    });
     var reconnected = false;
     var disconnected = false;
     stan.on('connect', function (sc) {
@@ -308,7 +312,11 @@ describe('Basic Connectivity', function() {
 
   it('nats close, should not close stan', function (done) {
     this.timeout(15000);
-    var stan = STAN.connect(cluster, nuid.next(), {'url':'nats://localhost:' + PORT, 'reconnectTimeWait':20});
+    var stan = STAN.connect(cluster, nuid.next(), {
+      url:'nats://localhost:' + PORT,
+      reconnectTimeWait:20,
+      maxReconnectAttempts: 10
+    });
     stan.on('close', function() {
       (stan.nc.connected).should.equal(false, "nc should be closed");
       (stan.isClosed()).should.equal(false, "sc should not be closed");

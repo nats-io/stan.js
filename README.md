@@ -197,7 +197,6 @@ To do this, the client must set manual acknowledgement mode on the subscription,
 
 The Nodejs client does not support synchronous publishing.
 
-
 ### Rate limiting/matching
 
 A classic problem of publish-subscribe messaging is matching the rate of message producers with the rate of message consumers.
@@ -214,6 +213,41 @@ NATS Streaming provides a connection option called `maxPubAcksInflight` that eff
 
 Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `SubscriptionOptions#setMaxInFlight(number)`. This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription.
 When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit.
+
+### Connection Status
+
+The fact that the NATS Streaming server and clients are not directly connected poses a challenge when it comes to know if a client is still valid. When a client disconnects, the streaming server is not notified, hence the importance of calling `stan#close()`. The server sends heartbeats to the client's private inbox and if it misses a certain number of responses, it will consider the client's connection lost and remove it from its state.
+
+Before version `0.1.0`, the client library was not sending PINGs to the streaming server to detect connection failure. This was problematic especially if an application was never sending data (had only subscriptions for instance). Picture the case where a client connects to a NATS Server which has a route to a NATS Streaming server (either connecting to a standalone NATS Server or the server it embeds). If the connection between the streaming server and the client's NATS Server is broken, the client's NATS connection would still be ok, yet, no communication with the streaming server is possible.
+
+Starting version `0.1.0` of this library and server `0.10.0`, the client library will now send PINGs at regular intervals (default is `5000` milliseconds) and will close the streaming connection after a certain number of PINGs have been sent without any response (default is `3`). When that happens, a callback - if one is registered - will be invoked to notify the user that the connection is permanently lost, and the reason for the failure.
+
+Here is how you would specify your own PING values and the callback:
+
+```javascript
+var STAN = require('node-nats-streaming');
+sc.connect('test-cluster', 'test', {
+    maxPingOut: 3, 
+    pingInterval: 1000
+});
+
+sc.on('connect', function () {
+    sc.on('connection_lost', function(error) {
+        console.log('disconnected from stan', error);
+    });
+    ...
+```
+
+Note that the only way to be notified is to set the callback. If the callback is not set, PINGs are still sent and the connection will be closed if needed, but the application won't know if it has only subscriptions.
+
+When the connection is lost, your application would have to re-create it and all subscriptions if any.
+
+When no NATS connection is provided via the connection options, the library creates its own NATS connection and will now set the reconnect attempts (`maxReconnectAttempts`) to "infinite" (`-1`), which was not the case before. It should therefore be possible for the library to always reconnect, but this does not mean that the streaming connection will not be closed, even if you set a very high threshold for the PINGs max out value. Keep in mind that while the client is disconnected, the server is sending heartbeats to the clients too, and when not getting any response, it will remove that client from its state. When the communication is restored, the PINGs sent to the server will allow to detect this condition and report to the client that the connection is now closed.
+
+Also, while a client is "disconnected" from the server, another application with connectivity to the streaming server may connect and uses the same client ID. The server, when detecting the duplicate client ID, will try to contact the first client to know if it should reject the connect request of the second client. Since the communication between the server and the first client is broken, the server will not get a response and therefore will replace the first client with the second one.
+
+Prior to client `0.1.0` and server `0.10.0`, if the communication between the first client and server were to be restored, and the application would send messages, the server would accept those because the published messages client ID would be valid, although the client is not. With client at `0.1.0`+ and server `0.10.0`+, additional information is sent with each message to allow the server to reject messages from a client that has been replaced by another client.
+
 
 ## Supported Node Versions
 
