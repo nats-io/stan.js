@@ -126,8 +126,6 @@ describe('Stan Server Ping Specific', function() {
 
   it('should get a "connection_lost" when replaced', function(done) {
     this.timeout(10000);
-
-
     var id = nuid.next();
     function connectClient(url, name) {
       var sc = STAN.connect(cluster, id, {

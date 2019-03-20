@@ -19,11 +19,12 @@
 'use strict';
 
 var STAN = require('../lib/stan'),
+NATS = require('nats'),
 ssc = require('./support/stan_server_control'),
 nuid = require('nuid'),
 should = require('should'),
-timers = require('timers');
-
+timers = require('timers'),
+proto = require('../lib/pb');
 
 describe('Basics', function () {
 
@@ -68,6 +69,32 @@ describe('Basics', function () {
       });
       sub.on('unsubscribed', function () {
         done();
+      });
+    });
+  });
+
+  it('published messages should have connID and clientID', function (done) {
+    var clientID = nuid.next();
+    var stan = STAN.connect(cluster, clientID, PORT);
+    stan.on('connect', function () {
+      var connID = Buffer.from(stan.connId).toString('utf8');
+      var nc = NATS.connect({encoding: "binary", preserveBuffers: true, port: PORT});
+      nc.on('connect', function() {
+        nc.subscribe(stan.pubPrefix + ".hello", function(msg) {
+          var pm = proto.PubMsg.deserializeBinary(new Uint8Array(msg));
+          var pm_cid = pm.getClientId();
+          clientID.should.be.equal(pm_cid);
+          var pm_connid = Buffer.from(pm.getConnId()).toString('utf8');
+          connID.should.be.equal(pm_connid);
+          done();
+        });
+        nc.flush(function() {
+          stan.publish("hello", "world", function(err) {
+            if(err) {
+              should.fail(err);
+            }
+          });
+        });
       });
     });
   });
