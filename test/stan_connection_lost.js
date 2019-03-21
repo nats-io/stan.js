@@ -70,8 +70,8 @@ describe('Stan Server Ping Specific', function() {
     var t1, t2;
     var stan = STAN.connect(cluster, nuid.next(), {
       url: uri,
-      pingInterval: 1000,
-      pingMaxOut: 2
+      stanPingInterval: 1000,
+      stanMaxPingOut: 2
     });
     stan.on('error', function(err) {
       console.log('ignoring', err);
@@ -79,8 +79,8 @@ describe('Stan Server Ping Specific', function() {
     stan.on('connection_lost', function () {
       t2 = new Date().getTime();
       var duration = t2 - t1;
-      duration.should.be.greaterThanOrEqual((stan.pingMaxOut + 1) * stan.pingInterval);
-      duration.should.be.lessThanOrEqual((stan.pingMaxOut + 2) * stan.pingInterval);
+      duration.should.be.greaterThanOrEqual((stan.stanMaxPingOut + 1) * stan.stanPingInterval);
+      duration.should.be.lessThanOrEqual((stan.stanMaxPingOut + 2) * stan.stanPingInterval);
       done();
     });
     stan.on('connect', function () {
@@ -98,8 +98,8 @@ describe('Stan Server Ping Specific', function() {
     var reconnected = false;
     var stan = STAN.connect(cluster, nuid.next(), {
       url: uri,
-      pingInterval: 1000,
-      pingMaxOut: 3
+      stanPingInterval: 1000,
+      stanMaxPingOut: 3
     });
     stan.on('connection_lost', function () {
       done();
@@ -130,8 +130,8 @@ describe('Stan Server Ping Specific', function() {
     function connectClient(url, name) {
       var sc = STAN.connect(cluster, id, {
         url: url,
-        pingInterval: 1000,
-        pingMaxOut: 10,
+        stanPingInterval: 1000,
+        stanMaxPingOut: 10,
         maxReconnectAttempts: -1,
         reconnectTimeWait: 1000,
         waitOnFirstConnect: true,

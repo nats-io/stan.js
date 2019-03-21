@@ -227,8 +227,8 @@ Here is how you would specify your own PING values and the callback:
 ```javascript
 var STAN = require('node-nats-streaming');
 sc.connect('test-cluster', 'test', {
-    maxPingOut: 3, 
-    pingInterval: 1000
+    stanMaxPingOut: 3, 
+    stanPingInterval: 1000
 });
 
 sc.on('connect', function () {
