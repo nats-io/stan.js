@@ -15,6 +15,7 @@
 
 import events = require('events');
 import nats = require('nats');
+import * as tls from 'tls';
 // import proto = require('./lib/pb');
 
 export const version: string;
@@ -28,14 +29,39 @@ export const version: string;
  */
 export function connect(clusterID: string, clientID: string, opts?: StanOptions): Stan;
 
-export interface StanOptions {
+export interface StanOptions extends ClientOpts {
 	url?: string,
     connectTimeout?: number,
     ackTimeout?: number,
 	discoverPrefix?: string,
     maxPubAcksInflight?: number,
     stanEncoding?: string,
+    stanMaxPingOut?: number,
+    stanPingInterval?: number,
 	nc?: nats.Client
+}
+
+// these are standard node-nats options, some are omitted until
+// nats-streaming-server supports them. Others like encoding
+// must always be set to binary.
+export interface ClientOpts {
+    url?: string,
+    user?: string,
+    pass?: string,
+    verbose?: boolean,
+    pedantic?: boolean,
+    reconnect?: boolean,
+    maxReconnectAttempts?: number,
+    reconnectTimeWait?: number,
+    servers?: Array<string>,
+    noRandomize?: boolean,
+    tls?: boolean | tls.TlsOptions,
+    name?: string,
+    yieldTime?: number,
+    waitOnFirstConnect?: boolean,
+    token?: string,
+    pingInterval?: number,
+    maxPingOut?: number,
 }
 
 
