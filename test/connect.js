@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-/* jslint node: true */
-/* global describe: false, before: false, after: false, it: false */
+/* eslint-disable no-console */
+/* global describe, beforeEach, afterEach, it */
 'use strict';
 
-var STAN = require ('../lib/stan.js'),
+const STAN = require('../lib/stan.js'),
     nuid = require('nuid'),
     ssc = require('./support/stan_server_control'),
     should = require('should'),
@@ -25,329 +25,271 @@ var STAN = require ('../lib/stan.js'),
     os = require('os'),
     path = require('path');
 
-describe('Basic Connectivity', function() {
-
-  var PORT = 9876;
-  var cluster = 'test-cluster';
-  var uri = 'nats://localhost:' + PORT;
-  var server;
-
-  var serverDir = path.join(os.tmpdir(), nuid.next());
-
-  function startServer(done) {
-    server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function() {
-      timers.setTimeout(function() {
-        done();
-      }, 250);
-    });
-  }
-
-  before(function(done) {
-    startServer(done);
-  });
-
-  // Shutdown our server after we are done
-  after(function(done){
-    if(server) {
-      server.kill();
-    }
-    done();
-  });
+function latcher(count, done) {
+    let c = count;
+    return () => {
+        c--;
+        if (c === 0) {
+            done();
+        }
+    };
+}
 
 
-  it('should perform basic connect with port', function(done){
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var connected = false;
-    stan.on('close', function() {
-      connected.should.equal(true);
-      done();
-    });
-    stan.on('connect', function() {
-      connected = true;
-      stan.close();
-    });
-  });
+describe('Connect', () => {
 
-  it('should connect with port option', function(done){
-    var stan = STAN.connect(cluster, nuid.next(), {port: PORT});
-    var connected = false;
-    stan.on('close', function() {
-      connected.should.equal(true);
-      done();
-    });
-    stan.on('connect', function() {
-      connected = true;
-      stan.close();
-    });
-  });
+    const PORT = 9876;
+    const cluster = 'test-cluster';
+    const uri = 'nats://localhost:' + PORT;
+    let server;
 
-  it('on connect inbox should be set', function(done){
-      var stan = STAN.connect(cluster, nuid.next(), PORT);
-      stan.on('connect', function() {
-        stan.pubPrefix.should.be.ok();
-        stan.subRequests.should.be.ok();
-        stan.unsubRequests.should.be.ok();
-        stan.subCloseRequests.should.be.ok();
-        stan.closeRequests.should.be.ok();
+    const serverDir = path.join(os.tmpdir(), nuid.next());
 
-        stan.close();
-        done();
-      });
-  });
-
-  it('should perform basic connect with uri', function(done){
-    var stan = STAN.connect(cluster, nuid.next(), uri);
-   var connected = false;
-    stan.on('close', function() {
-      connected.should.be.equal(true);
-      done();
-    });
-    stan.on('connect', function() {
-      connected = true;
-      stan.close();
-    });
-  });
-
-
-
-  it('should perform basic connect with options arg', function(done){
-    var options = { 'uri' : uri };
-    var stan = STAN.connect(cluster, nuid.next(), options);
-    var connected = false;
-    stan.on('close', function() {
-      connected.should.equal(true);
-      done();
-    });
-    stan.on('connect', function() {
-      connected = true;
-      stan.close();
-    });
-  });
-
-
-  it('should emit error if no server available', function(done){
-    var stan = STAN.connect(cluster, nuid.next(), 'nats://localhost:22222');
-    stan.on('error', function() {
-      done();
-    });
-  });
-
-
-  it('should emit connecting events and try repeatedly if configured and no server available', function(done){
-    var stan = STAN.connect(cluster, nuid.next(), {'uri':'nats://localhost:22222',
-			   'waitOnFirstConnect': true,
-			   'reconnectTimeWait':100,
-			   'maxReconnectAttempts':20});
-    var connectingEvents = 0;
-    stan.on('error', function(v) {
-      done('should not have produced error:' + v + " reconnencting:" + connectingEvents);
-    });
-    stan.on('reconnecting', function() {
-      connectingEvents++;
-    });
-    setTimeout(function(){
-      should(connectingEvents).equal(5);
-      done();
-    }, 550);
-  });
-
-
-  it('should still receive publish when some servers are invalid', function(done){
-    var natsServers = ['nats://localhost:22222', uri, 'nats://localhost:22223'];
-    var ua = STAN.connect(cluster, nuid.next(), {servers: natsServers});
-    var ub = STAN.connect(cluster, nuid.next(), {servers: natsServers});
-    var subject = nuid.next();
-
-    var uaClosed = false;
-    var ubClosed = false;
-
-    ua.on('connect', function() {
-      ua.publish(subject, 'bar', function(err, guid) {
-        should.not.exist(err);
-        should.exist(guid);
-        ua.close();
-      });
-    });
-    ua.on('close', function() {
-      uaClosed = true;
-      if(ubClosed) {
-        allCompleted();
-      }
-    });
-
-    ub.on('connect', function () {
-      var so = ub.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      var sub = ub.subscribe(subject, so);
-      sub.on('error', function (err) {
-        should.fail(err, null, 'Error handler was called: ' + err);
-      });
-      sub.on('message', function(msg) {
-        msg.getSubject().should.equal(subject);
-        msg.getData().should.equal('bar');
-        sub.unsubscribe();
-      });
-
-      sub.on('unsubscribed', function () {
-        ub.close();
-      });
-    });
-    ub.on('close', function(){
-      ubClosed = true;
-      if(uaClosed) {
-        allCompleted();
-      }
-    });
-
-    function allCompleted() {
-      should(uaClosed).equal(true, 'ua didnt close');
-      should(ubClosed).equal(true, 'ub didnt close');
-      done();
-    }
-  });
-
-
-  it('should still receive publish when some servers[noRandomize] are invalid', function(done) {
-    var natsServers = ['nats://localhost:22222', uri, 'nats://localhost:22223'];
-    var ua = STAN.connect(cluster, nuid.next(), {servers: natsServers, noRandomize: true});
-    var ub = STAN.connect(cluster, nuid.next(), {servers: natsServers, noRandomize: true});
-    var subject = nuid.next();
-
-    var uaClosed = false;
-    var ubClosed = false;
-
-    ua.on('connect', function () {
-      ua.publish(subject, 'bar', function (err, guid) {
-        should.not.exist(err);
-        should.exist(guid);
-        ua.close();
-      });
-    });
-    ua.on('close', function () {
-      uaClosed = true;
-      if (ubClosed) {
-        allCompleted();
-      }
-    });
-
-    ub.on('connect', function () {
-      var so = ub.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      var sub = ub.subscribe(subject, so);
-      sub.on('error', function (err) {
-        should.fail(err, null, 'Error handler was called: ' + err);
-      });
-      sub.on('message', function (msg) {
-        should(msg.getSubject()).equal(msg.getSubject(), 'subject did not match');
-        should(msg.getData()).equal('bar', 'payload did not match');
-        sub.unsubscribe();
-      });
-
-      sub.on('unsubscribed', function () {
-        ub.close();
-      });
-    });
-    ub.on('close', function () {
-      ubClosed = true;
-      if (uaClosed) {
-        allCompleted();
-      }
-    });
-    function allCompleted() {
-      (uaClosed).should.equal(true, 'ua didnt close');
-      (ubClosed).should.equal(true, 'ub didnt close');
-      done();
-    }
-  });
-
-
-  it('should add a new cluster server', function(done){
-    var servers = [uri,'nats://localhost:22223'];
-    var sc = STAN.connect(cluster, nuid.next(), {servers: new Array(servers[0])});
-    var contains = 0;
-
-    sc.on('connect', function(client) {
-      client.nc.addServer(servers[1]);
-      client.nc.servers.forEach(function(_server) {
-       if (servers.indexOf(_server.url.href) !== -1) {
-         contains++;
-       }
-      });
-      should(contains).equal(servers.length);
-      done();
-    });
-  });
-
-
-  it('reconnect should provide stan connection', function (done) {
-    // done = DoneSilencer(done);
-    this.timeout(15000);
-    var stan = STAN.connect(cluster, nuid.next(), {
-      url:'nats://localhost:' + PORT,
-      reconnectTimeWait:1000,
-      maxReconnectAttempts: 10
-    });
-    var reconnected = false;
-    var disconnected = false;
-    stan.on('connect', function (sc) {
-      should(stan).equal(sc, 'stan connect did not pass stan connection');
-      process.nextTick(function () {
-        ssc.stop_server(server);
-      });
-    });
-    stan.on('disconnect', function() {
-      disconnected = true;
-    });
-    stan.on('reconnecting', function () {
-      // should have emitted a disconnect
-      if (!reconnected) {
-        reconnected = true;
-        server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], function () {
+    function startServer(done) {
+        server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir], () => {
+            timers.setTimeout(() => {
+                done();
+            }, 250);
         });
-      }
+    }
+
+    beforeEach((done) => {
+        startServer(done);
     });
-    stan.on('reconnect', function (sc) {
-      should(stan).equal(sc, 'stan reconnect did not pass stan connection');
-        stan.close();
+
+    // Shutdown our server after we are done
+    afterEach((done) => {
+        if (server) {
+            server.kill();
+        }
         done();
     });
-  });
 
-  it('nats close, should not close stan', function (done) {
-    this.timeout(15000);
-    var stan = STAN.connect(cluster, nuid.next(), {
-      url:'nats://localhost:' + PORT,
-      reconnectTimeWait:20,
-      maxReconnectAttempts: 10
-    });
-    stan.on('close', function() {
-      (stan.nc.connected).should.equal(false, "nc should be closed");
-      (stan.isClosed()).should.equal(false, "sc should not be closed");
-      startServer(done);
-    });
-    stan.on('connect', function (sc) {
-      should(stan).equal(sc, 'stan connect did not pass stan connection');
-      process.nextTick(function() {
-        server.kill();
-      });
-    });
-  });
-
-  it('sub after disconnect raises error', function (done) {
-    this.timeout(10000);
-    var stan = STAN.connect(cluster, nuid.next(), {'url': 'nats://localhost:' + PORT, 'reconnectTimeWait': 1000});
-    stan.on('connect', function () {
-      setTimeout(function () {
-        stan.subscribe("are.you.there", function (m) {});
-      }, 250);
-      setTimeout(function () {
-        ssc.stop_server(server);
-      }, 0);
+    it('should perform basic connect with port', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), PORT);
+        let connected = false;
+        sc.on('close', () => {
+            connected.should.be.true();
+            done();
+        });
+        sc.on('connect', () => {
+            connected = true;
+            sc.close();
+        });
     });
 
-    stan.on('timeout', function (err) {
-      // restart the server for others
-      startServer(done);
+    it('should connect with port option', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), {
+            port: PORT
+        });
+        let connected = false;
+        sc.on('close', () => {
+            connected.should.be.true();
+            done();
+        });
+        sc.on('connect', () => {
+            connected = true;
+            sc.close();
+        });
     });
-  });
+
+    it('should perform basic connect with uri', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), uri);
+        let connected = false;
+        sc.on('close', () => {
+            connected.should.be.true();
+            done();
+        });
+        sc.on('connect', () => {
+            connected = true;
+            sc.close();
+        });
+    });
+
+
+    it('should perform basic connect with options arg', (done) => {
+        const options = {
+            'uri': uri
+        };
+        const sc = STAN.connect(cluster, nuid.next(), options);
+        let connected = false;
+        sc.on('close', () => {
+            connected.should.be.true();
+            done();
+        });
+        sc.on('connect', () => {
+            connected = true;
+            sc.close();
+        });
+    });
+
+
+    it('should emit error if no server available', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), 'nats://localhost:22222');
+        stan.on('error', () => {
+            done();
+        });
+    });
+
+
+    it('should emit connecting events and try repeatedly if configured and no server available', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), {
+            uri: 'nats://localhost:22222',
+            waitOnFirstConnect: true,
+            reconnectTimeWait: 100,
+            maxReconnectAttempts: 20
+        });
+        let connectingEvents = 0;
+        stan.on('error', (v) => {
+            done(new Error('should not have produced error:' + v + " reconnecting:" + connectingEvents));
+        });
+        stan.on('reconnecting', () => {
+            connectingEvents++;
+        });
+        setTimeout(() => {
+            connectingEvents.should.equal(5);
+            stan.close();
+            done();
+        }, 550);
+    });
+
+    function clusterTest(noRandomize, done) {
+        const latch = latcher(2, done);
+
+        const opts = {
+            servers: ['nats://localhost:22222', uri, 'nats://localhost:22223']
+        };
+
+        if (noRandomize) {
+            opts.noRandomize = true;
+        }
+
+        const sca = STAN.connect(cluster, nuid.next(), opts);
+        const scb = STAN.connect(cluster, nuid.next(), opts);
+        const subject = nuid.next();
+
+
+        sca.on('connect', () => {
+            sca.publish(subject, 'bar', (err, guid) => {
+                should.not.exist(err);
+                should.exist(guid);
+                sca.close();
+            });
+        });
+        sca.on('close', latch);
+
+        scb.on('connect', () => {
+            const so = scb.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST);
+            const sub = scb.subscribe(subject, so);
+            sub.on('error', (err) => {
+                should.fail(err, null, 'Error handler was called: ' + err);
+            });
+            sub.on('message', (msg) => {
+                msg.getSubject().should.equal(subject);
+                msg.getData().should.equal('bar');
+                sub.unsubscribe();
+            });
+
+            sub.on('unsubscribed', () => {
+                scb.close();
+            });
+        });
+        scb.on('close', latch);
+    }
+
+
+    it('should still receive publish when some servers are invalid', (done) => {
+        clusterTest(false, done);
+    });
+
+
+    it('should still receive publish when some servers[noRandomize] are invalid', (done) => {
+        clusterTest(true, done);
+    });
+
+
+    it('nats close, will attempt reconnects', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), {
+            url: 'nats://localhost:' + PORT,
+            reconnectTimeWait: 20,
+            maxReconnectAttempts: 10
+        });
+        let disconnect = false;
+        sc.on('disconnect', () => {
+            disconnect = true;
+        });
+
+        let reconnecting = 0;
+        sc.on('reconnecting', () => {
+            reconnecting++;
+        });
+
+        sc.on('close', () => {
+            disconnect.should.be.true();
+            reconnecting.should.be.greaterThan(0);
+            done();
+        });
+        sc.on('connect', () => {
+            process.nextTick(() => {
+                server.kill();
+            });
+        });
+    }).timeout(15000);
+
+
+    it('reconnect should provide stan connection', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), {
+            url: 'nats://localhost:' + PORT,
+            reconnectTimeWait: 1000,
+            maxReconnectAttempts: 10
+        });
+        let reconnected = false;
+        sc.on('connect', (sc) => {
+            should(sc).equal(sc, 'stan connect did not pass stan connection');
+            process.nextTick(() => {
+                ssc.stop_server(server);
+            });
+        });
+        sc.on('reconnecting', () => {
+            // should have emitted a disconnect
+            if (!reconnected) {
+                reconnected = true;
+                server = ssc.start_server(PORT, ['--store', 'FILE', '--dir', serverDir]);
+            }
+        });
+        sc.on('reconnect', (sc) => {
+            should.exist(sc);
+            sc.close();
+            done();
+        });
+    }).timeout(15000);
+
+    it('sub after disconnect raises timeout', (done) => {
+        const sc = STAN.connect(cluster, nuid.next(), {
+            url: 'nats://localhost:' + PORT,
+            reconnectTimeWait: 1000,
+            maxReconnectAttempts: 5
+        });
+
+        sc.on('connect', () => {
+            sc.on('timeout', (arg) => {
+                sc.close();
+            });
+
+            sc.on('close', () => {
+                done();
+            });
+
+            sc.nc.on('disconnect', () => {
+                sc.subscribe("are.you.there", () => {
+                    // ignore
+                });
+            });
+
+            process.nextTick(() => {
+                ssc.stop_server(server);
+            });
+        });
+    }).timeout(10000);
 });

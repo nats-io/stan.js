@@ -1,62 +1,48 @@
 #!/usr/bin/env node
 
-/* jslint node: true */
-/* jshint esversion: 6 */
+/* eslint-disable no-console, no-process-exit */
 'use strict';
 
-var util = require('util');
+const STAN = require('../lib/stan.js');
 
-var args = process.argv.slice(2);
-var cluster_id = getFlagValue('-c') || "test-cluster";
-var client_id = getFlagValue('-id') || "node-stan-sub";
-var queue_group = getFlagValue('-q') || '';
-var server = getFlagValue('-s') || 'nats://localhost:4222';
+const argv = require('minimist')(process.argv.slice(2));
+const cluster_id = argv.c || "test-cluster";
+const client_id = argv.i || "node-stan-pub";
+const server = argv.s || 'nats://localhost:4222';
+const queueGroup = argv.q || "";
+const subject = argv._[0];
 
-var subject = args[0];
 if (!subject) {
-  usage();
+    usage();
 }
 
 function usage() {
-  console.log('stan-sub [-c clusterId] [-id clientId] [-s server] [-q queueGroup] [-s server] <subject>');
-  process.exit();
-}
-
-function getFlagValue(k) {
-  var i = args.indexOf(k);
-  if (i > -1) {
-    var v = args[i + 1];
-    args.splice(i, 2);
-    return v;
-  }
+    console.log('stan-sub [-c clusterId] [-i clientId] [-s server] [-q queueGroup] <subject>');
+    process.exit();
 }
 
 
-var stan = require('../lib/stan.js').connect(cluster_id, client_id, server);
-stan.on('connect', function () {
-  console.log("STAN connected!");
-  start();
+const stan = STAN.connect(cluster_id, client_id, server);
+stan.on('connect', function() {
+    console.log("STAN connected!");
+    const opts = stan.subscriptionOptions();
+    opts.setStartWithLastReceived();
+
+    const subscription = stan.subscribe(subject, queueGroup, opts);
+    subscription.on('error', (err) => {
+        console.log(`subscription for ${subject} raised an error: ${err}`);
+    });
+    subscription.on('unsubscribed', () => {
+        console.log(`unsubscribed to ${subject}`);
+    });
+    subscription.on('ready', (sub) => {
+        console.log(`subscribed to ${sub.subject}`);
+    });
+    subscription.on('message', (msg) => {
+        console.log(msg.getSubject(), `[${msg.getSequence()}]`, msg.getData());
+    });
 });
 
 stan.on('error', function(reason) {
-  console.log(reason);
+    console.log(reason);
 });
-
-function start() {
-  var opts = stan.subscriptionOptions();
-  opts.setStartWithLastReceived();
-
-  var subscription = stan.subscribe(subject, queue_group, opts);
-  subscription.on('error', function (err) {
-    console.log('subscription for ' + this.subject + " raised an error: " + err);
-  });
-  subscription.on('unsubscribed', function () {
-    console.log('unsubscribed to ' + this.subject);
-  });
-  subscription.on('ready', function () {
-    console.log('subscribed to ' + this.subject + ' qgroup:' + this.qGroup);
-  });
-  subscription.on('message', function (msg) {
-    console.log(msg.getSubject() + "[" + msg.getSequence() + "]: " + msg.getData());
-  });
-}

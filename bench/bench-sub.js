@@ -1,77 +1,69 @@
 #!/usr/bin/env node
 
-/* jslint node: true */
-/* jshint esversion: 6 */
+/* eslint-disable no-console, no-process-exit */
+
 'use strict';
 
-var util = require('util');
+const STAN = require('../lib/stan.js');
 
-var args = process.argv.slice(2);
-var cluster_id = getFlagValue('-c') || "test-cluster";
-var client_id = getFlagValue('-id') || "bench-sub";
-var server = getFlagValue('-s') || 'nats://localhost:4222';
-var count = getFlagValue('-mc') || 100000;
-count = parseInt(count);
+const argv = require('minimist')(process.argv.slice(2));
+const cluster_id = argv.c || "test-cluster";
+const client_id = argv.i || "bench-pub";
+const server = argv.s || 'nats://localhost:4222';
+const qGroup = argv.g || "";
+let count = argv.m || 100000;
+count = parseInt(count, 10);
+const subject = argv._[0];
 
-var subject = args[0]
 if (!subject) {
-  usage();
-}
-
-function getFlagValue(k) {
-  var i = args.indexOf(k);
-  if (i > -1) {
-    var v = args[i + 1];
-    args.splice(i, 2);
-    return v;
-  }
+    usage();
 }
 
 function usage() {
-  console.log('bench-sub [-c clusterId] [-id clientId] [-s server] [-s server] [-mc messageCount] <subject>');
-  process.exit();
+    console.log('bench-sub [-c clusterId] [-i clientId] [-s server] [-m messageCount] [-q qGroup] <subject>');
+    process.exit();
 }
 
-var bufSize = count + 1;
-var stan = require('../lib/stan.js').connect(cluster_id, client_id, {maxPubAcksInflight: bufSize}, server);
+const stan = STAN.connect(cluster_id, client_id, {
+    url: server
+});
 
-var start;
-var end;
-var received = 0;
-stan.on('connect', function () {
-  start = Date.now();
-  let opts = stan.subscriptionOptions();
-  opts.setDeliverAllAvailable(true);
-  var subscription = stan.subscribe(subject, opts);
-  subscription.on('error', function (err) {
-    console.log('subscription for ' + this.subject + " raised an error: " + err);
-  });
-  subscription.on('unsubscribed', function () {
-    stan.close();
-  });
-  subscription.on('ready', function () {
-    console.log('subscribed to ' + this.subject + ' qgroup:' + this.qGroup);
-  });
-  subscription.on('message', done());
+let start;
+stan.on('connect', () => {
+    start = Date.now();
+    const opts = stan.subscriptionOptions();
+    opts.setDeliverAllAvailable();
+    if (qGroup) {
+        opts.setQGroup(qGroup);
+    }
+    const sub = stan.subscribe(subject, opts);
+    sub.on('error', (err) => {
+        console.log('subscription for ' + sub.subject + " raised an error: " + err);
+    });
+    sub.on('unsubscribed', () => {
+        stan.close();
+    });
+    sub.on('ready', () => {
+        console.log('subscribed to', sub.subject, sub.qGroup ? 'qGroup ' + qGroup : '');
+    });
 
-  function done(msg) {
-    var received = 0;
-    return function(msg) {
-      received++;
-      if(received === count) {
-        var end = Date.now();
-        var time = end - start;
-        stan.nc.flush(function () {
-          var msgPerSec = parseInt(count/(time/1000));
-          console.log("Received " + count + " msgs in " + time + "ms (" + msgPerSec + " msgs/sec)");
-          subscription.unsubscribe();
-        });
-      }
-    };
-  }
+    let received = 0;
+
+    sub.on('message', (msg) => {
+        received++;
+        if (received === count) {
+            const end = Date.now();
+            const time = end - start;
+            stan.nc.flush(() => {
+                const msgPerSec = Math.round(count / (time / 1000));
+                console.log(`\nReceived ${count} msgs in ${time}ms (${msgPerSec} msgs/sec)`);
+                sub.unsubscribe();
+            });
+        }
+    });
 });
 
 
-stan.on('close', function () {
-  process.exit(0);
+stan.on('close', function() {
+    process.exit(0);
 });
