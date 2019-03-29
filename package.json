@@ -29,33 +29,44 @@
   "contributors": [],
   "main": "./index.js",
   "scripts": {
-    "coveralls": "cat ./reports/coverage/lcov.info | coveralls",
-    "depcheck": "dependency-check . lib/* lib/pb/*",
-    "depcheck:unused": "dependency-check ./package.json --unused --no-dev lib/*.js",
+    "cover": "nyc report --reporter=html && open coverage/index.html",
+    "coveralls": "npm run test && nyc report --reporter=text-lcov | coveralls",
+    "depcheck": "dependency-check . lib/*",
+    "depcheck:unused": "dependency-check ./package.json --unused --no-dev lib/*",
+    "fmt": "js-beautify -n --config crockford.jscsrc -r lib/stan.js test/*.js test/support/*.js examples/* bench/*.js",
     "gen": "protoc --js_out=import_style=commonjs,binary:. lib/pb/protocol.proto",
-    "lint": "jshint --reporter node_modules/jshint-stylish lib/*.js test/*.js test/support/*.js examples/*.js",
-    "npm-publish": "npm publish https://github.com/nats-io/node-nats-streaming.git --access public",
+    "lint": "eslint ./lib/stan.js ./examples ./bench ./test",
     "test": "npm run depcheck && npm run depcheck:unused && npm run lint && npm run test:unit",
-    "test:unit": "mkdir -p reports/ && NODE_ENV=test multi='spec=- xunit=reports/mocha-xunit.xml' istanbul cover _mocha -- -R mocha-multi --exit --timeout 10000 --slow 750 && istanbul check-coverage"
+    "test:unit": "mkdir -p reports/ && NODE_ENV=test multi='spec=- xunit=reports/mocha-xunit.xml' nyc mocha --timeout 10000 --slow 750",
+    "wtf": "wtfnode /usr/local/bin/_mocha --timeout 10000 --slow 750"
   },
   "engines": {
     "node": ">= 6.0.0"
   },
   "dependencies": {
-    "google-protobuf": "^3.6.1",
-    "nats": "^1.2.2",
-    "nuid": "^1.0.0"
+    "google-protobuf": "^3.7.1",
+    "nats": "^1.2.4",
+    "nuid": "^1.1.0"
   },
   "devDependencies": {
-    "coveralls": "^3.0.2",
+    "coveralls": "^3.0.3",
     "dependency-check": "2.6.x",
-    "istanbul": "^0.4.5",
-    "jshint": "^2.10.1",
-    "jshint-stylish": "^2.2.1",
+    "eslint": "^5.10.0",
+    "js-beautify": "^1.9.1",
+    "minimist": "^1.2.0",
     "mocha": "^5.2.0",
     "mocha-lcov-reporter": "1.2.x",
     "mocha-multi": "^1.0.1",
-    "should": "^11.2.1"
+    "nyc": "^13.3.0",
+    "should": "^13.2.3"
   },
-  "typings": "./index.d.ts"
+  "typings": "./index.d.ts",
+  "nyc": {
+    "exclude": [
+      "test/**",
+      "examples/**",
+      "bench/**",
+      "lib/pb/**"
+    ]
+  }
 }

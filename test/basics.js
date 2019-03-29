@@ -13,918 +13,861 @@
  * limitations under the License.
  */
 
-/* jshint node: true */
 
 /* global describe: false, before: false, after: false, it: false */
 'use strict';
 
-var STAN = require('../lib/stan'),
-NATS = require('nats'),
-ssc = require('./support/stan_server_control'),
-nuid = require('nuid'),
-should = require('should'),
-timers = require('timers'),
-proto = require('../lib/pb');
+const STAN = require('../lib/stan'),
+    NATS = require('nats'),
+    proto = require('../lib/pb'),
+    ssc = require('./support/stan_server_control'),
+    nuid = require('nuid'),
+    should = require('should'),
+    timers = require('timers');
 
-describe('Basics', function () {
-
-  var cluster = 'test-cluster';
-  var PORT = 1423;
-  var uri = 'nats://localhost:' + PORT;
-  var server;
-
-  // Start up our own streaming
-  before(function (done) {
-    server = ssc.start_server(PORT, function () {
-      timers.setTimeout(function () {
-        done();
-      }, 250);
-    });
-  });
-
-  // Shutdown our server after we are done
-  after(function () {
-    //noinspection JSUnresolvedFunction
-    server.kill();
-  });
-
-  it('should do basic subscribe and unsubscribe', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var didReady = false;
-    stan.on('connect', function () {
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      var sub = stan.subscribe('foo', so);
-      sub.on('error', function (err) {
-        should.fail(err, null, 'Error handler was called');
-      });
-      sub.on('ready', function () {
-        didReady = true;
-        sub.subject.should.be.equal('foo');
-        should.not.exist(sub.qGroup);
-        should.exist(sub.inbox);
-        should.exist(sub.ackInbox);
-        should.exist(sub.inboxSub);
-        sub.unsubscribe();
-      });
-      sub.on('unsubscribed', function () {
-        done();
-      });
-    });
-  });
-
-  it('published messages should have connID and clientID', function (done) {
-    var clientID = nuid.next();
-    var stan = STAN.connect(cluster, clientID, PORT);
-    stan.on('connect', function () {
-      var connID = Buffer.from(stan.connId).toString('utf8');
-      var nc = NATS.connect({encoding: "binary", preserveBuffers: true, port: PORT});
-      nc.on('connect', function() {
-        nc.subscribe(stan.pubPrefix + ".hello", function(msg) {
-          var pm = proto.PubMsg.deserializeBinary(new Uint8Array(msg));
-          var pm_cid = pm.getClientId();
-          clientID.should.be.equal(pm_cid);
-          var pm_connid = Buffer.from(pm.getConnId()).toString('utf8');
-          connID.should.be.equal(pm_connid);
-          done();
-        });
-        nc.flush(function() {
-          stan.publish("hello", "world", function(err) {
-            if(err) {
-              should.fail(err);
-            }
-          });
-        });
-      });
-    });
-  });
-
-  it('subscription options should allow chaining', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST).should.be.equal(so);
-      so.setMaxInFlight(100).should.be.equal(so);
-      so.setAckWait(1000).should.be.equal(so);
-      so.setStartAt(1000).should.be.equal(so);
-      so.setStartAtSequence(1000).should.be.equal(so);
-      so.setStartTime(new Date()).should.be.equal(so);
-      so.setStartAtTimeDelta(1000).should.be.equal(so);
-      so.setStartWithLastReceived().should.be.equal(so);
-      so.setDeliverAllAvailable().should.be.equal(so);
-      so.setManualAckMode(true).should.be.equal(so);
-      so.setDurableName('foo').should.be.equal(so);
-      done();
-    });
-  });
-
-  it('should do publish', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var connected = false;
-    stan.on('connect', function () {
-      connected = true;
-      var sid = stan.publish('foo', "bar", function (err, guid) {
-        should.exist(guid);
-        guid.should.be.equal(sid);
-        should.not.exist(err);
-        done();
-      });
-    });
-  });
-
-  it('should do basic publish (only pub)', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var subject = nuid.next();
-      stan.publish(subject, 'bzz', function (err, guid) {
-        should.not.exist(err);
-        should.exist(guid);
-        stan.close();
-        done();
-      });
-    });
-  });
-
-
-  it('should fire a callback for subscription', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.NEW_ONLY);
-      var subject = nuid.next();
-      var sub = stan.subscribe(subject, so);
-      sub.on('ready', function () {
-        stan.publish(subject, 'foo', function (err, guid) {
-          should.not.exist(err);
-          should.exist(guid);
-        });
-      });
-      sub.on('unsubscribed', function () {
-        done();
-        stan.close();
-      });
-      sub.on('message', function (msg) {
-        sub.unsubscribe();
-      });
-    });
-  });
-
-  it('duplicate client id should fire error', function (done) {
-    var wantTwo = 2;
-    var id = nuid.next();
-    var stan = STAN.connect(cluster, id, PORT);
-    stan.on('connect', function () {
-      var stan2 = STAN.connect(cluster, id, PORT);
-      stan2.on('error', function () {
-        wantTwo--;
-        if (wantTwo === 0) {
-          done();
-        }
-      });
-      stan2.on('close', function () {
-        wantTwo--;
-        if (wantTwo === 0) {
-          done();
-        }
-      });
-    });
-  });
-
-  it('should include the correct message in the callback', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var subject = nuid.next();
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      var sub = stan.subscribe(subject, so);
-      sub.on('message', function (m) {
-        m.getSubject().should.be.equal(subject);
-        sub.unsubscribe();
-      });
-      sub.on('unsubscribed', function () {
-        stan.close();
-        done();
-      });
-      stan.publish(subject);
-    });
-  });
-
-
-  it('json', function (done) {
-      var stan = STAN.connect(cluster, nuid.next(), PORT);
-      stan.on('connect', function () {
-          var subj = nuid.next();
-
-          var opts = stan.subscriptionOptions();
-          opts.setStartAt(STAN.StartPosition.FIRST);
-
-          var sub = stan.subscribe(subj, opts);
-          sub.on('message', function (msg) {
-              var v = JSON.parse(msg.getData());
-              v.should.have.property("a", "b");
-              sub.unsubscribe();
-          });
-
-          sub.on('unsubscribed', function() {
-              stan.close();
-              done();
-          });
-
-          stan.publish(subj, JSON.stringify({a: "b"}));
-      });
-  });
-
-
-  it('should include the correct reply in the callback', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var count = 0;
-
-    function maybeFinish() {
-      if (count === 2) {
-        count++;
-        done();
-      }
-    }
-
-    stan.on('connect', function () {
-      var subja = nuid.next();
-      var subjb = nuid.next();
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      var sub1 = stan.subscribe(subja, so);
-      sub1.on('message', function (m) {
-        m.getSubject().should.be.equal(subja);
-        sub1.unsubscribe();
-        count++;
-      });
-      sub1.on('unsubscribed', function () {
-        maybeFinish();
-      });
-
-      var sub2 = stan.subscribe(subjb, so);
-      sub2.on('message', function (m) {
-        m.getSubject().should.be.equal(subjb);
-        sub2.unsubscribe();
-        count++;
-      });
-      sub2.on('unsubscribed', function () {
-        maybeFinish();
-      });
-
-      stan.publish(subja);
-      stan.publish(subjb);
-    });
-  });
-
-
-  it('should error if unsubscribe after close of connection', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var sub;
-    stan.on('connect', function () {
-      sub = stan.subscribe(nuid.next());
-      sub.on('ready', function () {
-        stan.close();
-      });
-      sub.on('error', function (e) {
-        e.message.should.containEql('Connection closed');
-        done();
-      });
-    });
-
-    stan.on('close', function () {
-      sub.unsubscribe();
-    });
-  });
-
-
-  it('should not receive data after unsubscribe call', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var received = 0;
-    var published = 0;
-
-    function maybeFinish() {
-      published++;
-      if (published === 3) {
-        should(received).be.equal(1);
-        done();
-      }
-    }
-
-    stan.on('connect', function () {
-      var req = nuid.next();
-
-      var so = stan.subscriptionOptions();
-      so.setStartAt(STAN.StartPosition.FIRST);
-      // subscriber for request, replies on the specified subject
-      var sub = stan.subscribe(req, so);
-      sub.on('ready', function () {
-        stan.publish(req, '', maybeFinish);
-        stan.publish(req, '', maybeFinish);
-        stan.publish(req, '', maybeFinish);
-      });
-      sub.on('message', function (m) {
-        received++;
-        sub.unsubscribe();
-      });
-    });
-  });
-
-
-  it('publish cb is error if not connected', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      stan.close();
-    });
-    stan.on('close', function () {
-      stan.publish('foo', 'bar', function (error) {
-        if (error instanceof Error) {
-          done();
-        }
-      });
-    });
-  });
-
-  it('publish throws error if not connected', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      stan.close();
-    });
-    stan.on('close', function () {
-      try {
-        stan.publish('foo', 'bar');
-      } catch (error) {
-        done();
-      }
-    });
-  });
-
-
-  it('maxPubAcksInflight should cb on error', function (done) {
-    var opts = {maxPubAcksInflight: 3, uri: uri};
-    var stan = STAN.connect(cluster, nuid.next(), opts);
-    var failed = false;
-    stan.on('connect', function () {
-      var cb = function (err) {
-        if (failed) return;
-        if (err) {
-          if (err.message === 'stan: max in flight reached.') {
-            failed = true;
+function latcher(count, done) {
+    let c = count;
+    return function() {
+        c--;
+        if (c === 0) {
             done();
-          }
         }
-      };
-
-      for (var i = 0; i < 10; i++) {
-        stan.publish(nuid.next(), 'bar', cb);
-      }
-    });
-  });
-
-  it('maxPubAcksInflight should toss on error', function (done) {
-    var opts = {maxPubAcksInflight: 3, uri: uri};
-    var stan = STAN.connect(cluster, nuid.next(), opts);
-    var buf = Buffer.from('HelloWorld', 'utf8');
-    var failed = false;
-    stan.on('connect', function () {
-      for (var i = 0; i < 10; i++) {
-        try {
-          stan.publish(nuid.next(), buf);
-        } catch (err) {
-          if (!failed) {
-            if (err.message === 'stan: max in flight reached.') {
-              failed = true;
-              done();
-            }
-          }
-        }
-      }
-    });
-  });
-
-  it('subscribe requires subject', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      stan.subscribe(undefined);
-    });
-    stan.on('error', function (err) {
-      if (err.message === 'stan: subject must be supplied') {
-        done();
-      }
-    });
-  });
-
-  it('subscribe requires a connection', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      stan.close();
-    });
-    stan.on('close', function (err) {
-      stan.subscribe(nuid.next());
-    });
-    stan.on('error', function (err) {
-      if (err.message === 'stan: Connection closed') {
-        done();
-      }
-    });
-  });
-
-
-  it('subscribe emits ready', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var sub = stan.subscribe(nuid.next());
-      sub.on('ready', function () {
-        sub.unsubscribe();
-      });
-      sub.on('unsubscribed', function () {
-        done();
-      });
-    });
-  });
-
-  it('unsubscribe twice is invalid', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var sub = stan.subscribe(nuid.next());
-      sub.on('ready', function () {
-        sub.unsubscribe();
-      });
-      sub.on('unsubscribed', function () {
-        sub.unsubscribe();
-      });
-      sub.on('error', function (err) {
-        if (err.message === 'stan: invalid subscription') {
-          done();
-        }
-      });
-    });
-  });
-
-  it('unsubscribe marks it closed', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      var sub = stan.subscribe(nuid.next());
-      sub.on('ready', function () {
-        sub.unsubscribe();
-        if(! sub.isClosed()) {
-          done("Subscription should have been closed");
-        }
-      });
-      sub.on('unsubscribed', function () {
-        done();
-      });
-    });
-  });
-
-  it('subscribe starting on second', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
-
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setStartAtSequence(2);
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        if (!gotFirst) {
-          gotFirst = true;
-          should(msg.getData()).equal('second', 'second message was not the one expected');
-          done();
-        }
-      });
-    }
-
-    var waitForThree = function () {
-      count++;
-      if (count === 3) {
-        process.nextTick(subscribe);
-      }
     };
+}
 
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForThree);
-      stan.publish(subj, 'second', waitForThree);
-      stan.publish(subj, 'third', waitForThree);
+describe('Basics', () => {
+    const cluster = 'test-cluster';
+    const PORT = 1423;
+    const uri = 'nats://localhost:' + PORT;
+    let server;
+
+    // Start up our own streaming
+    before((done) => {
+        server = ssc.start_server(PORT, () => {
+            timers.setTimeout(done, 250);
+        });
     });
-  });
 
-  it('subscribe starting on last received', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
-
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setStartWithLastReceived();
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        if (!gotFirst) {
-          gotFirst = true;
-          should(msg.getData()).equal('third', 'second message was not the one expected');
-          done();
-        }
-      });
-
-    }
-
-    var waitForThree = function () {
-      count++;
-      if (count === 3) {
-        process.nextTick(subscribe);
-      }
-    };
-
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForThree);
-      stan.publish(subj, 'second', waitForThree);
-      stan.publish(subj, 'third', waitForThree);
+    // Shutdown our server after we are done
+    after(() => {
+        //noinspection JSUnresolvedFunction
+        server.kill();
     });
-  });
 
-
-  it('subscribe after 500ms on last received', function (done) {
-    this.timeout(5000);
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
-
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setStartAtTimeDelta(1000);
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        if (!gotFirst) {
-          gotFirst = true;
-          should(msg.getData()).equal('fourth', 'message was not the one expected');
-          done();
-        }
-      });
-    }
-
-    var waitForSix = function () {
-      count++;
-      if (count === 6) {
-        process.nextTick(subscribe);
-      }
-    };
-
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForSix);
-      stan.publish(subj, 'second', waitForSix);
-      stan.publish(subj, 'third', waitForSix);
-      setTimeout(function () {
-        stan.publish(subj, 'fourth', waitForSix);
-        stan.publish(subj, 'fifth', waitForSix);
-        stan.publish(subj, 'sixth', waitForSix);
-      }, 1500);
+    it('should do basic subscribe and unsubscribe', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST);
+            const sub = stan.subscribe('foo', so);
+            sub.on('error', (err) => {
+                should.fail(err, null, 'Error handler was called');
+            });
+            sub.on('ready', () => {
+                sub.subject.should.be.equal('foo');
+                should.not.exist(sub.qGroup);
+                should.exist(sub.inbox);
+                should.exist(sub.ackInbox);
+                should.exist(sub.inboxSub);
+                sub.unsubscribe();
+            });
+            sub.on('unsubscribed', () => {
+                stan.close();
+                done();
+            });
+        });
     });
-  });
 
+    it('published messages should have connID and clientID', (done) => {
+        done = latcher(2, done);
+        const clientID = nuid.next();
+        const stan = STAN.connect(cluster, clientID, PORT);
+        stan.on('connect', () => {
+            const connID = Buffer.from(stan.connId).toString('utf8');
+            const nc = NATS.connect({
+                encoding: "binary",
+                preserveBuffers: true,
+                port: PORT
+            });
+            nc.on('connect', () => {
+                nc.subscribe(stan.pubPrefix + ".hello", (msg) => {
+                    const pm = proto.PubMsg.deserializeBinary(new Uint8Array(msg));
+                    const pm_cid = pm.getClientId();
+                    clientID.should.be.equal(pm_cid);
+                    const pm_connid = Buffer.from(pm.getConnId()).toString('utf8');
+                    connID.should.be.equal(pm_connid);
+                    nc.close();
+                    done();
 
-  it('subscribe after a specific time on last received', function (done) {
-    this.timeout(6000);
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
-
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setStartTime(new Date(Date.now() - 1000));
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        if (!gotFirst) {
-          gotFirst = true;
-          // node will be spurious since we are in a single thread
-          var ok = msg.getData() === 'fourth' || msg.getData() === 'fifth' || msg.getData() === 'sixth';
-          should(ok).equal(true, 'message was not the one expected');
-          done();
-        }
-      });
-    }
-
-    var waitForSix = function () {
-      count++;
-      if (count === 6) {
-        process.nextTick(subscribe);
-      }
-    };
-
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForSix);
-      stan.publish(subj, 'second', waitForSix);
-      stan.publish(subj, 'third', waitForSix);
-      setTimeout(function () {
-        stan.publish(subj, 'fourth', waitForSix);
-        stan.publish(subj, 'fifth', waitForSix);
-        stan.publish(subj, 'sixth', waitForSix);
-      }, 1500);
+                });
+                nc.flush(() => {
+                    stan.publish("hello", "world", (err) => {
+                        if (err) {
+                            should.fail(err);
+                        }
+                        stan.close();
+                        done();
+                    });
+                });
+            });
+        });
     });
-  });
 
-  it('subscribe starting on new', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
+    it('subscription options should allow chaining', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST).
+            setMaxInFlight(100).
+            setAckWait(101).
+            setStartAt(102).
+            setStartAtSequence(103).
+            setStartTime(Date.now()).
+            setStartAtTimeDelta(1000).
+            setStartWithLastReceived().
+            setDeliverAllAvailable().
+            setManualAckMode(true).
+            setDurableName('foo');
 
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setStartAt(STAN.StartPosition.NEW_ONLY);
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        if (!gotFirst) {
-          gotFirst = true;
-          msg.getData().should.be.equal('fourth');
-          done();
-        }
-      });
-
-      sub.on('ready', function () {
-        stan.publish(subj, 'fourth');
-      });
-    }
-
-    var waitForThree = function () {
-      count++;
-      if (count === 3) {
-        process.nextTick(subscribe);
-      }
-    };
-
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForThree);
-      stan.publish(subj, 'second', waitForThree);
-      stan.publish(subj, 'third', waitForThree);
-    });
-  });
-
-
-    it('subscribe all available', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    var count = 0;
-
-    function subscribe() {
-      var gotFirst = false;
-      var opts = stan.subscriptionOptions();
-      opts.setDeliverAllAvailable();
-      var sub = stan.subscribe(subj, opts);
-      sub.on('message', function (msg) {
-        msg.getTimestamp().getTime().should.be.equal(parseInt(msg.getTimestampRaw() / 1000000));
-        msg.isRedelivered().should.be.equal(false);
-        var buf = msg.getRawData();
-        buf.length.should.be.greaterThan(0);
-
-        if (!gotFirst) {
-          gotFirst = true;
-
-          should(msg.getData()).equal('first', 'second message was not the one expected');
-          done();
-        }
-      });
-    }
-
-    var waitForThree = function () {
-      count++;
-      if (count === 3) {
-        process.nextTick(subscribe);
-      }
-    };
-
-    stan.on('connect', function () {
-      stan.publish(subj, 'first', waitForThree);
-      stan.publish(subj, 'second', waitForThree);
-      stan.publish(subj, 'third', waitForThree);
-    });
-  });
-
-
-  it('queues should work', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    var subj = nuid.next();
-    stan.on('connect', function () {
-
-      var subsready = 0;
-      var a = 0;
-      var b = 0;
-      var opts = stan.subscriptionOptions();
-      opts.setDeliverAllAvailable();
-      var suba = stan.subscribe(subj, 'queue', opts);
-      var subb = stan.subscribe(subj, 'queue', opts);
-
-      suba.on('message', function (msg) {
-        a++;
-        if ((a + b) === 10) {
-          done();
-        }
-      });
-
-      subb.on('message', function (msg) {
-        b++;
-        if ((a + b) === 10) {
-          done();
-        }
-      });
-
-      suba.on('ready', function () {
-        subsready++;
-        if (subsready === 2) {
-          fire();
-        }
-      });
-
-      subb.on('ready', function () {
-        subsready++;
-        if (subsready === 2) {
-          fire();
-        }
-      });
-
-      function fire() {
-        for (var i = 0; i < 10; i++) {
-          stan.publish(subj, i + '');
-        }
-      }
-    });
-  });
-
-
-  it('durables should work', function (done) {
-    var clientID = nuid.next();
-    var subj = nuid.next();
-
-    var stan = STAN.connect(cluster, clientID, PORT);
-    var opts = stan.subscriptionOptions();
-    opts.setDeliverAllAvailable();
-    opts.setManualAckMode(true);
-    opts.setDurableName('my-durable');
-
-    stan.on('connect', function () {
-      var sub1 = stan.subscribe(subj, opts);
-      sub1.on('ready', function () {
-        for (var i = 0; i < 2; i++) {
-          stan.publish(subj);
-        }
-      });
-
-      var count = 0;
-      sub1.on('message', function (msg) {
-        count++;
-        if (count < 2) {
-          msg.ack();
-        }
-        if (count === 2) {
-          setTimeout(function () {
             stan.close();
-          }, 100);
+            done();
+        });
+    });
+
+    it('should do publish', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const sid = stan.publish('foo', "bar", (err, guid) => {
+                should.exist(guid);
+                guid.should.be.equal(sid);
+                should.not.exist(err);
+                stan.close();
+                done();
+            });
+        });
+    });
+
+    it('should do basic publish (only pub)', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const subject = nuid.next();
+            stan.publish(subject, 'bzz', (err, guid) => {
+                should.not.exist(err);
+                should.exist(guid);
+                stan.close();
+                done();
+            });
+        });
+    });
+
+
+    it('should fire a callback for subscription', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.NEW_ONLY);
+            const subject = nuid.next();
+            const sub = stan.subscribe(subject, so);
+            sub.on('ready', () => {
+                stan.publish(subject, 'foo', (err, guid) => {
+                    should.not.exist(err);
+                    should.exist(guid);
+                });
+            });
+            sub.on('unsubscribed', () => {
+                stan.close();
+                done();
+            });
+            sub.on('message', () => {
+                sub.unsubscribe();
+            });
+        });
+    });
+
+    it('duplicate client id should fire error', (done) => {
+        const latch = latcher(2, function() {
+            stan.close();
+            done();
+        });
+        const id = nuid.next();
+        const stan = STAN.connect(cluster, id, PORT);
+        stan.on('connect', () => {
+            const stan2 = STAN.connect(cluster, id, PORT);
+            stan2.on('error', () => {
+                latch();
+            });
+            stan2.on('close', () => {
+                latch();
+            });
+        });
+    });
+
+    it('should include the correct message in the callback', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const subject = nuid.next();
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST);
+            const sub = stan.subscribe(subject, so);
+            sub.on('message', (m) => {
+                m.getSubject().should.be.equal(subject);
+                sub.unsubscribe();
+            });
+            sub.on('unsubscribed', () => {
+                stan.close();
+                done();
+            });
+            stan.publish(subject);
+        });
+    });
+
+    it('should include the correct reply in the callback', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+
+        const latch = latcher(2, () => {
+            stan.close();
+            done();
+        });
+
+        stan.on('connect', () => {
+            const subja = nuid.next();
+            const subjb = nuid.next();
+
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST);
+            const sub1 = stan.subscribe(subja, so);
+            sub1.on('message', (m) => {
+                m.getSubject().should.be.equal(subja);
+                sub1.unsubscribe();
+            });
+            sub1.on('unsubscribed', latch);
+
+            const sub2 = stan.subscribe(subjb, so);
+            sub2.on('message', (m) => {
+                m.getSubject().should.be.equal(subjb);
+                sub2.unsubscribe();
+            });
+            sub2.on('unsubscribed', latch);
+
+            stan.publish(subja);
+            stan.publish(subjb);
+        });
+    });
+
+
+    it('should error if unsubscribe after close of connection', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        let sub;
+        stan.on('connect', () => {
+            sub = stan.subscribe(nuid.next());
+            sub.on('ready', () => {
+                stan.close();
+            });
+            sub.on('error', (e) => {
+                e.message.should.containEql('Connection closed');
+                done();
+            });
+        });
+
+        stan.on('close', () => {
+            sub.unsubscribe();
+        });
+    });
+
+
+    it('should not receive data after unsubscribe call', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+
+
+        stan.on('connect', () => {
+            const req = nuid.next();
+
+            const so = stan.subscriptionOptions();
+            so.setStartAt(STAN.StartPosition.FIRST);
+            // subscriber for request, replies on the specified subject
+            const sub = stan.subscribe(req, so);
+            sub.on('ready', () => {
+                stan.publish(req, '');
+                stan.publish(req, '');
+                stan.publish(req, '');
+            });
+
+            let count = 0;
+            sub.on('message', () => {
+                count++;
+                sub.unsubscribe();
+            });
+
+            sub.on('unsubscribed', () => {
+                (count).should.be.equal(1);
+                stan.close();
+                done();
+            });
+        });
+    });
+
+
+    it('publish cb is error if not connected', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            stan.close();
+        });
+        stan.on('close', () => {
+            stan.publish('foo', 'bar', (error) => {
+                if (error instanceof Error) {
+                    done();
+                }
+            });
+        });
+    });
+
+    it('publish throws error if not connected', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            stan.close();
+        });
+        stan.on('close', () => {
+            try {
+                stan.publish('foo', 'bar');
+            } catch (error) {
+                done();
+            }
+        });
+    });
+
+
+    it('maxPubAcksInflight should cb on error', (done) => {
+        const opts = {
+            maxPubAcksInflight: 3,
+            uri: uri
+        };
+        const stan = STAN.connect(cluster, nuid.next(), opts);
+        let failed = false;
+        stan.on('connect', () => {
+            const cb = (err) => {
+                if (failed) {
+                    return;
+                }
+                if (err) {
+                    if (err.message === 'stan: max in flight reached.') {
+                        failed = true;
+                        process.nextTick(() => {
+                            stan.close();
+                            done();
+                        });
+                    }
+                }
+            };
+
+            for (let i = 0; i < 10; i++) {
+                stan.publish(nuid.next(), 'bar', cb);
+            }
+        });
+    });
+
+    it('maxPubAcksInflight should toss on error', (done) => {
+        const opts = {
+            maxPubAcksInflight: 3,
+            uri: uri
+        };
+        const stan = STAN.connect(cluster, nuid.next(), opts);
+        const buf = Buffer.from('HelloWorld', 'utf8');
+        let failed = false;
+        stan.on('connect', () => {
+            for (let i = 0; i < 10; i++) {
+                try {
+                    stan.publish(nuid.next(), buf);
+                } catch (err) {
+                    if (!failed) {
+                        if (err.message === 'stan: max in flight reached.') {
+                            failed = true;
+                            process.nextTick(() => {
+                                stan.close();
+                                done();
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    it('subscribe requires subject', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            stan.subscribe(undefined);
+        });
+        stan.on('error', (err) => {
+            if (err.message === 'stan: subject must be supplied') {
+                stan.close();
+                done();
+            }
+        });
+    });
+
+    it('subscribe requires a connection', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            stan.close();
+        });
+        stan.on('close', () => {
+            stan.subscribe(nuid.next());
+        });
+        stan.on('error', (err) => {
+            if (err.message === 'stan: Connection closed') {
+                done();
+            }
+        });
+    });
+
+
+    it('subscribe emits ready', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const sub = stan.subscribe(nuid.next());
+            sub.on('ready', () => {
+                sub.unsubscribe();
+            });
+            sub.on('unsubscribed', () => {
+                stan.close();
+                done();
+            });
+        });
+    });
+
+    it('unsubscribe twice is invalid', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const sub = stan.subscribe(nuid.next());
+            sub.on('ready', () => {
+                sub.unsubscribe();
+            });
+            sub.on('unsubscribed', () => {
+                sub.unsubscribe();
+            });
+            sub.on('error', (err) => {
+                if (err.message === 'stan: invalid subscription') {
+                    stan.close();
+                    done();
+                }
+            });
+        });
+    });
+
+    it('unsubscribe marks it closed', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            const sub = stan.subscribe(nuid.next());
+            sub.on('ready', () => {
+                sub.unsubscribe();
+                if (!sub.isClosed()) {
+                    done("Subscription should have been closed");
+                }
+            });
+            sub.on('unsubscribed', () => {
+                stan.close();
+                done();
+            });
+        });
+    });
+
+    it('subscribe starting on second', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
+
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setStartAtSequence(2);
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                if (!gotFirst) {
+                    gotFirst = true;
+                    should(msg.getData()).equal('second', 'second message was not the one expected');
+                    stan.close();
+                    done();
+                }
+            });
         }
-      });
-    });
 
-    stan.on('close', function () {
-      var stan2 = STAN.connect(cluster, clientID, PORT);
-      stan2.on('connect', function () {
-        var sub2 = stan2.subscribe(subj, opts);
-        var second = false;
-        sub2.on('message', function (msg) {
-          if (!second) {
-            second = true;
-            msg.getSequence().should.be.equal(2);
-            stan2.close();
-            done();
-          }
+        const waitForThree = () => {
+            count++;
+            if (count === 3) {
+                process.nextTick(subscribe);
+            }
+        };
+
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForThree);
+            stan.publish(subj, 'second', waitForThree);
+            stan.publish(subj, 'third', waitForThree);
         });
-      });
     });
-  });
 
-  it('sub close should stop getting messages', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      // server needs to support close requests
-      if(!stan.subCloseRequests || stan.subCloseRequests.length === 0) {
-        done("Server doesn't support close");
-      }
+    it('subscribe starting on last received', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
 
-      // fail the test if error
-      function errorHandler(err) {
-        done(err);
-      }
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setStartWithLastReceived();
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                if (!gotFirst) {
+                    gotFirst = true;
+                    should(msg.getData()).equal('third', 'second message was not the one expected');
+                    stan.close();
+                    done();
+                }
+            });
 
-      // store the sent messages keyed
-      var counter = {before: 0, after: 0};
+        }
 
-      // issue a close after the first message
-      function msgHandler(sub, key) {
-        var k = key;
-        return function (m) {
-          counter[k]++;
-          if(key === 'before') {
-            // ack before the close
-            m.ack();
-            sub.close();
-          }
+        const waitForThree = () => {
+            count++;
+            if (count === 3) {
+                process.nextTick(subscribe);
+            }
         };
-      }
 
-      var subject = nuid.next();
-      function setupHandlers(sub, key) {
-        sub.on('message', msgHandler(sub, key));
-        sub.on('error', errorHandler);
-      }
-
-      var opts = stan.subscriptionOptions();
-      opts.setDeliverAllAvailable();
-      var sub = stan.subscribe(subject, '', opts);
-      setupHandlers(sub, "before");
-      // Fire one, flush, close, on close fire another, reconnect
-      sub.on('closed', function () {
-        counter.should.have.property('before', 1);
-        stan.publish(subject);
-        setTimeout(function() {
-          counter.should.have.property('before', 1);
-          done();
-        }, 250);
-      });
-      sub.on('ready', function () {
-        stan.publish(subject);
-      });
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForThree);
+            stan.publish(subj, 'second', waitForThree);
+            stan.publish(subj, 'third', waitForThree);
+        });
     });
-  });
 
-  it('durable close should pause messages', function (done) {
-    var stan = STAN.connect(cluster, nuid.next(), PORT);
-    stan.on('connect', function () {
-      // server needs to support close requests
-      if(!stan.subCloseRequests || stan.subCloseRequests.length === 0) {
-        done("Server doesn't support close");
-      }
-      // fail the test if error
-      function errorHandler(err) {
-        done(err);
-      }
 
-      // store the sent messages keyed
-      var counter = {before: 0, after: 0};
+    it('subscribe after 500ms on last received', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
 
-      // issue a close after the first message
-      function msgHandler(sub, key) {
-        var k = key;
-        return function(m) {
-          counter[k]++;
-          if(key === 'before') {
-            // this message has to be manually ack'ed or the ack won't be sent
-            m.ack();
-            sub.close();
-          }
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setStartAtTimeDelta(1000);
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                if (!gotFirst) {
+                    gotFirst = true;
+                    should(msg.getData()).equal('fourth', 'message was not the one expected');
+                    stan.close();
+                    done();
+                }
+            });
+        }
+
+        const waitForSix = () => {
+            count++;
+            if (count === 6) {
+                process.nextTick(subscribe);
+            }
         };
-      }
 
-      function setupHandlers(sub, key) {
-        sub.on('message', msgHandler(sub, key));
-        sub.on('error', errorHandler);
-      }
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForSix);
+            stan.publish(subj, 'second', waitForSix);
+            stan.publish(subj, 'third', waitForSix);
+            setTimeout(() => {
+                stan.publish(subj, 'fourth', waitForSix);
+                stan.publish(subj, 'fifth', waitForSix);
+                stan.publish(subj, 'sixth', waitForSix);
+            }, 1100);
+        });
+    }).timeout(5000);
 
-      var subject = nuid.next();
 
-      var opts = stan.subscriptionOptions();
-      opts.setDeliverAllAvailable();
-      opts.setDurableName("dur");
-      var sub = stan.subscribe(subject, '', opts);
-      setupHandlers(sub, "before");
-      // Fire one, flush, close, on close fire another, reconnect
-      sub.on('closed', function () {
-        counter.should.have.property('before', 1);
-        stan.publish(subject);
-        setTimeout(function () {
-          counter.should.have.property('before', 1);
-          restart();
-        }, 250);
-      });
-      sub.on('ready', function () {
-        stan.publish(subject);
-      });
+    it('subscribe after a specific time on last received', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
 
-      function restart() {
-        var opts = stan.subscriptionOptions();
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setStartTime(new Date(Date.now() - 1000));
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                if (!gotFirst) {
+                    gotFirst = true;
+                    // node will be spurious since we are in a single thread
+                    const ok = msg.getData() === 'fourth' || msg.getData() === 'fifth' || msg.getData() === 'sixth';
+                    should(ok).equal(true, 'message was not the one expected');
+                    stan.close();
+                    done();
+                }
+            });
+        }
+
+        const waitForSix = () => {
+            count++;
+            if (count === 6) {
+                process.nextTick(subscribe);
+            }
+        };
+
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForSix);
+            stan.publish(subj, 'second', waitForSix);
+            stan.publish(subj, 'third', waitForSix);
+            setTimeout(() => {
+                stan.publish(subj, 'fourth', waitForSix);
+                stan.publish(subj, 'fifth', waitForSix);
+                stan.publish(subj, 'sixth', waitForSix);
+            }, 1100);
+        });
+    }).timeout(5000);
+
+    it('subscribe starting on new', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
+
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setStartAt(STAN.StartPosition.NEW_ONLY);
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                if (!gotFirst) {
+                    gotFirst = true;
+                    msg.getData().should.be.equal('fourth');
+                    stan.close();
+                    done();
+                }
+            });
+
+            sub.on('ready', () => {
+                stan.publish(subj, 'fourth');
+            });
+        }
+
+        const waitForThree = () => {
+            count++;
+            if (count === 3) {
+                process.nextTick(subscribe);
+            }
+        };
+
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForThree);
+            stan.publish(subj, 'second', waitForThree);
+            stan.publish(subj, 'third', waitForThree);
+        });
+    });
+
+
+    it('subscribe all available', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        let count = 0;
+
+        function subscribe() {
+            let gotFirst = false;
+            const opts = stan.subscriptionOptions();
+            opts.setDeliverAllAvailable();
+            const sub = stan.subscribe(subj, opts);
+            sub.on('message', (msg) => {
+                msg.getTimestamp().getTime().should.be.equal(parseInt(msg.getTimestampRaw() / 1000000, 10));
+                msg.isRedelivered().should.be.equal(false);
+                const buf = msg.getRawData();
+                buf.length.should.be.greaterThan(0);
+
+                if (!gotFirst) {
+                    gotFirst = true;
+                    should(msg.getData()).equal('first', 'second message was not the one expected');
+                    stan.close();
+                    done();
+                }
+            });
+        }
+
+        const waitForThree = () => {
+            count++;
+            if (count === 3) {
+                process.nextTick(subscribe);
+            }
+        };
+
+        stan.on('connect', () => {
+            stan.publish(subj, 'first', waitForThree);
+            stan.publish(subj, 'second', waitForThree);
+            stan.publish(subj, 'third', waitForThree);
+        });
+    });
+
+
+    it('queues should work', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        const subj = nuid.next();
+        stan.on('connect', () => {
+            let a = 0;
+            let b = 0;
+
+            // publish some events if we have 2 subscriptions
+            const maybeStart = latcher(2, () => {
+                for (let i = 0; i < 10; i++) {
+                    stan.publish(subj, i + '');
+                }
+            });
+
+            // finish if we got 10 messages
+            const maybeFinish = latcher(10, () => {
+                (a + b).should.be.equal(10);
+                a.should.be.greaterThan(0);
+                b.should.be.greaterThan(0);
+                stan.close();
+                done();
+            });
+
+
+            const opts = stan.subscriptionOptions();
+            opts.setDeliverAllAvailable();
+            const suba = stan.subscribe(subj, 'queue', opts);
+            const subb = stan.subscribe(subj, 'queue', opts);
+
+            suba.on('message', () => {
+                a++;
+                maybeFinish();
+            });
+
+            subb.on('message', () => {
+                b++;
+                maybeFinish();
+            });
+
+            suba.on('ready', maybeStart);
+            subb.on('ready', maybeStart);
+        });
+    });
+
+
+    it('durables should work', (done) => {
+        const clientID = nuid.next();
+        const subj = nuid.next();
+
+        const stan = STAN.connect(cluster, clientID, PORT);
+        const opts = stan.subscriptionOptions();
         opts.setDeliverAllAvailable();
-        opts.setDurableName("dur");
-        var sub = stan.subscribe(subject, '', opts);
-        setupHandlers(sub, "after");
+        opts.setManualAckMode(true);
+        opts.setDurableName('my-durable');
 
-        sub.on('ready', function() {
-          stan.publish(subject);
-          setTimeout(function() {
-            counter.should.have.property('after', 2);
-            done();
-          }, 250);
+        stan.on('connect', () => {
+            const sub1 = stan.subscribe(subj, opts);
+            sub1.on('ready', () => {
+                for (let i = 0; i < 3; i++) {
+                    stan.publish(subj);
+                }
+            });
+
+            sub1.on('message', (msg) => {
+                const seq = msg.getSequence();
+                if (seq < 3) {
+                    msg.ack();
+                }
+                if (seq === 2) {
+                    stan.close();
+                }
+            });
         });
-      }
-    });
-  });
-});
 
+        stan.on('close', () => {
+            const stan2 = STAN.connect(cluster, clientID, PORT);
+            stan2.on('connect', () => {
+                const sub2 = stan2.subscribe(subj, opts);
+                sub2.on('message', (msg) => {
+                    const seq = msg.getSequence();
+                    if (seq < 2) {
+                        should.fail("didn't expect to see sequences below 2");
+                    }
+                    seq.should.be.equal(3);
+                    stan2.close();
+                    done();
+                });
+            });
+        });
+    });
+
+    it('sub close should stop getting messages', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), PORT);
+        stan.on('connect', () => {
+            // server needs to support close requests
+            if (!stan.subCloseRequests || stan.subCloseRequests.length === 0) {
+                stan.close();
+                // skipped
+                done();
+                return;
+            }
+
+            const subject = nuid.next();
+            const opts = stan.subscriptionOptions();
+            opts.setDeliverAllAvailable();
+            const sub = stan.subscribe(subject, '', opts);
+            let counter = 0;
+            sub.on('message', () => {
+                counter++;
+                if (counter === 1) {
+                    sub.close();
+                }
+            });
+            sub.on('ready', () => {
+                stan.publish(subject);
+            });
+            sub.on('closed', () => {
+                stan.publish(subject);
+                stan.nc.flush(() => {
+                    counter.should.be.equal(1);
+                    stan.close();
+                    done();
+                });
+            });
+        });
+    });
+
+    it('durables should work', (done) => {
+        const clientID = nuid.next();
+        const subj = nuid.next();
+
+        const stan = STAN.connect(cluster, clientID, PORT);
+        const opts = stan.subscriptionOptions();
+        opts.setDeliverAllAvailable();
+        opts.setManualAckMode(true);
+        opts.setDurableName('my-durable');
+
+        stan.on('connect', () => {
+            const sub1 = stan.subscribe(subj, opts);
+            sub1.on('ready', () => {
+                for (let i = 0; i < 3; i++) {
+                    stan.publish(subj);
+                }
+            });
+
+            sub1.on('message', (msg) => {
+                const seq = msg.getSequence();
+                if (seq < 3) {
+                    msg.ack();
+                }
+                if (seq === 2) {
+                    sub1.close();
+                }
+            });
+
+            sub1.on('closed', () => {
+                const sub2 = stan.subscribe(subj, opts);
+                sub2.on('message', (msg) => {
+                    const seq = msg.getSequence();
+                    if (seq < 2) {
+                        should.fail("didn't expect to see sequences below 2");
+                    }
+                    seq.should.be.equal(3);
+                    stan.close();
+                    done();
+                });
+            });
+        });
+    });
+});
