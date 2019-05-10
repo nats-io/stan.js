@@ -2,9 +2,9 @@
 
 Node NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by [NATS](http://nats.io) for [Node.js](http://nodejs.org/).
 
-[![license](https://img.shields.io/github/license/nats-io/node-nats-streaming.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Travis branch](https://img.shields.io/travis/nats-io/node-nats-streaming/master.svg)](https://travis-ci.org/nats-io/node-nats-streaming)
-[![Coverage Status](https://coveralls.io/repos/github/nats-io/node-nats-streaming/badge.svg?branch=master)](https://coveralls.io/github/nats-io/node-nats-streaming?branch=master)
+[![license](https://img.shields.io/github/license/nats-io/stan.js.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Travis branch](https://img.shields.io/travis/nats-io/stan.js/master.svg)](https://travis-ci.org/nats-io/stan.js)
+[![Coverage Status](https://coveralls.io/repos/github/nats-io/stan.js/badge.svg?branch=master)](https://coveralls.io/github/nats-io/stan.js?branch=master)
 [![npm](https://img.shields.io/npm/v/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
 [![npm](https://img.shields.io/npm/dt/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
 
