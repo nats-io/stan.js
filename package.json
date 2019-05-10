@@ -16,10 +16,10 @@
   "homepage": "https://nats.io",
   "repository": {
     "type": "git",
-    "url": "git@github.com:nats-io/node-nats-streaming.git"
+    "url": "git@github.com:nats-io/stan.js.git"
   },
   "bugs": {
-    "url": "https://github.com/nats-io/node-nats-streaming/issues"
+    "url": "https://github.com/nats-io/stan.js/issues"
   },
   "license": "Apache-2.0",
   "private": false,
@@ -41,23 +41,23 @@
     "wtf": "wtfnode /usr/local/bin/_mocha --timeout 10000 --slow 750"
   },
   "engines": {
-    "node": ">= 6.0.0"
+    "node": ">= 8.0.0"
   },
   "dependencies": {
     "google-protobuf": "^3.7.1",
-    "nats": "^1.2.4",
+    "nats": "^1.2.10",
     "nuid": "^1.1.0"
   },
   "devDependencies": {
+    "acorn": "^6.1.1",
     "coveralls": "^3.0.3",
     "dependency-check": "2.6.x",
-    "eslint": "^5.10.0",
-    "js-beautify": "^1.9.1",
+    "eslint": "^5.16.0",
+    "js-beautify": "^1.10.0",
     "minimist": "^1.2.0",
     "mocha": "^5.2.0",
     "mocha-lcov-reporter": "1.2.x",
-    "mocha-multi": "^1.0.1",
-    "nyc": "^13.3.0",
+    "nyc": "^14.1.1",
     "should": "^13.2.3"
   },
   "typings": "./index.d.ts",
