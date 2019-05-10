@@ -1,6 +1,6 @@
-# NATS Streaming - Node.js Client
+# Stan.js - STAN Server Node.js Client
 
-Node NATS Streaming is an extremely performant, lightweight reliable streaming platform powered by [NATS](http://nats.io) for [Node.js](http://nodejs.org/).
+STAN server is an extremely performant, lightweight reliable streaming platform powered by [NATS](http://nats.io).
 
 [![license](https://img.shields.io/github/license/nats-io/stan.js.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Travis branch](https://img.shields.io/travis/nats-io/stan.js/master.svg)](https://travis-ci.org/nats-io/stan.js)
@@ -11,7 +11,7 @@ Node NATS Streaming is an extremely performant, lightweight reliable streaming p
 
 
 
-NATS Streaming provides the following high-level feature set:
+STAN server provides the following high-level feature set:
 - Log based persistence
 - At-Least-Once Delivery model, giving reliable message delivery
 - Rate matched on a per subscription basis
@@ -66,7 +66,7 @@ stan.on('close', function() {
 
 ### Subscription Start (i.e. Replay) Options
 
-NATS Streaming subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest.
+STAN subscriptions are similar to NATS subscriptions, but clients may start their subscription at an earlier point in the message stream, allowing them to receive messages that were published before this client registered interest.
 
 The options are described with examples below:
 
@@ -100,7 +100,7 @@ The options are described with examples below:
 
 ### Wildcard Subscriptions
 
-NATS Streaming subscriptions **do not** support wildcards.
+STAN subscriptions **do not** support wildcards.
 
 ### Durable Subscriptions
 
@@ -175,10 +175,10 @@ For each message published, a [NUID](https://github.com/nats-io/nuid) is generat
 
 #### Message Acknowledgements and Redelivery
 
-NATS Streaming offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, NATS Streaming will attempt redelivery of the message.
+STAN server offers At-Least-Once delivery semantics, meaning that once a message has been delivered to an eligible subscriber, if an acknowledgement is not received within the configured timeout interval, STAN server will attempt redelivery of the message.
 This timeout interval is specified by the subscription option `SubscriptionOptions#setAckWait(millis)`, which defaults to 30 seconds.
 
-By default, messages are automatically acknowledged by the NATS Streaming client library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message.
+By default, messages are automatically acknowledged by the stan.js library after the subscriber's message handler is invoked. However, there may be cases in which the subscribing client wishes to accelerate or defer acknowledgement of the message.
 To do this, the client must set manual acknowledgement mode on the subscription, and invoke `Message#ack()` on the `Message`.
 
 ```javascript
@@ -196,7 +196,7 @@ To do this, the client must set manual acknowledgement mode on the subscription,
 
 ### Synchronous Publishing
 
-The Nodejs client does not support synchronous publishing.
+The stan.js client does not support synchronous publishing.
 
 ### Rate limiting/matching
 
@@ -208,18 +208,18 @@ Under Nodejs, this is even more important, as in Nodejs is a single-threaded env
 
 ### Publisher rate limiting
 
-NATS Streaming provides a connection option called `maxPubAcksInflight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, your publisher's callback will be invoked with an error. If not callback was defined, an error will be thrown until the number of unacknowledged messages fall below the specified limit. 
+STAN server provides a connection option called `maxPubAcksInflight` that effectively limits the number of unacknowledged messages that a publisher may have in-flight at any given time. When this maximum is reached, your publisher's callback will be invoked with an error. If not callback was defined, an error will be thrown until the number of unacknowledged messages fall below the specified limit. 
 
 ### Subscriber rate limiting
 
-Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `SubscriptionOptions#setMaxInFlight(number)`. This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that NATS Streaming will allow for a given subscription.
-When this limit is reached, NATS Streaming will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit.
+Rate limiting may also be accomplished on the subscriber side, on a per-subscription basis, using a subscription option called `SubscriptionOptions#setMaxInFlight(number)`. This option specifies the maximum number of outstanding acknowledgements (messages that have been delivered but not acknowledged) that STAN server will allow for a given subscription.
+When this limit is reached, STAN server will suspend delivery of messages to this subscription until the number of unacknowledged messages falls below the specified limit.
 
 ### Connection Status
 
-The fact that the NATS Streaming server and clients are not directly connected poses a challenge when it comes to know if a client is still valid. When a client disconnects, the streaming server is not notified, hence the importance of calling `stan#close()`. The server sends heartbeats to the client's private inbox and if it misses a certain number of responses, it will consider the client's connection lost and remove it from its state.
+The fact that the STAN server and clients are not directly connected poses a challenge when it comes to know if a client is still valid. When a client disconnects, the streaming server is not notified, hence the importance of calling `stan#close()`. The server sends heartbeats to the client's private inbox and if it misses a certain number of responses, it will consider the client's connection lost and remove it from its state.
 
-Before version `0.1.0`, the client library was not sending PINGs to the streaming server to detect connection failure. This was problematic especially if an application was never sending data (had only subscriptions for instance). Picture the case where a client connects to a NATS Server which has a route to a NATS Streaming server (either connecting to a standalone NATS Server or the server it embeds). If the connection between the streaming server and the client's NATS Server is broken, the client's NATS connection would still be ok, yet, no communication with the streaming server is possible.
+Before version `0.1.0`, the client library was not sending PINGs to the streaming server to detect connection failure. This was problematic especially if an application was never sending data (had only subscriptions for instance). Picture the case where a client connects to a NATS Server which has a route to a STAN server (either connecting to a standalone NATS Server or the server it embeds). If the connection between the STAN server and the client's NATS Server is broken, the client's NATS connection would still be ok, yet, no communication with the streaming server is possible.
 
 Starting version `0.1.0` of this library and server `0.10.0`, the client library will now send PINGs at regular intervals (default is `5000` milliseconds) and will close the streaming connection after a certain number of PINGs have been sent without any response (default is `3`). When that happens, a callback - if one is registered - will be invoked to notify the user that the connection is permanently lost, and the reason for the failure.
 
