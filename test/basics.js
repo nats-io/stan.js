@@ -14,7 +14,7 @@
  */
 
 
-/* global describe: false, before: false, after: false, it: false */
+/* global describe: false, beforeEach: false, afterEach: false, it: false */
 'use strict';
 
 const STAN = require('../lib/stan'),
@@ -42,16 +42,17 @@ describe('Basics', () => {
     let server;
 
     // Start up our own streaming
-    before((done) => {
+    beforeEach((done) => {
         server = ssc.start_server(PORT, () => {
             timers.setTimeout(done, 250);
         });
     });
 
     // Shutdown our server after we are done
-    after(() => {
+    afterEach(() => {
         //noinspection JSUnresolvedFunction
-        server.kill();
+        ssc.stop_server(server);
+        server = undefined;
     });
 
     it('should do basic subscribe and unsubscribe', (done) => {
@@ -392,34 +393,51 @@ describe('Basics', () => {
         });
     });
 
-    it('subscribe requires subject', (done) => {
+    it('subscribe requires subject and emits error otherwise', (done) => {
         const stan = STAN.connect(cluster, nuid.next(), PORT);
         stan.on('connect', () => {
-            stan.subscribe(undefined);
-        });
-        stan.on('error', (err) => {
-            if (err.message === 'stan: subject must be supplied') {
-                stan.close();
-                done();
-            }
+            const sub = stan.subscribe(undefined);
+            sub.on('error', (err) => {
+                if (err.message === 'stan: subject must be supplied') {
+                    stan.close();
+                    done();
+                }
+            });
         });
     });
 
-    it('subscribe requires a connection', (done) => {
+    it('subscribe requires a connection and emits error otherwise', (done) => {
         const stan = STAN.connect(cluster, nuid.next(), PORT);
         stan.on('connect', () => {
             stan.close();
         });
         stan.on('close', () => {
-            stan.subscribe(nuid.next());
-        });
-        stan.on('error', (err) => {
-            if (err.message === 'stan: Connection closed') {
-                done();
-            }
+            const sub = stan.subscribe(nuid.next());
+            sub.on('error', (err) => {
+                if (err.message === 'stan: Connection closed') {
+                    done();
+                }
+            });
         });
     });
 
+    it('subscribe emits timeout', (done) => {
+        const stan = STAN.connect(cluster, nuid.next(), {
+            uri: uri,
+            connectTimeout: 200,
+        });
+        stan.on('connect', () => {
+            server.kill();
+            server = undefined;
+
+            const sub = stan.subscribe(nuid.next());
+            sub.on('timeout', (err) => {
+                if (err.message === 'stan: subscribe request timeout') {
+                    done();
+                }
+            });
+        });
+    });
 
     it('subscribe emits ready', (done) => {
         const stan = STAN.connect(cluster, nuid.next(), PORT);
