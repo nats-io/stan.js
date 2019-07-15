@@ -16,7 +16,6 @@
 import events = require('events');
 import nats = require('nats');
 import * as tls from 'tls';
-// import proto = require('./lib/pb');
 
 export const version: string;
 
