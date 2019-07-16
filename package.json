@@ -1,6 +1,6 @@
 {
   "name": "node-nats-streaming",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "description": "Node.js client for NATS Streaming, a lightweight, high-performance cloud native messaging system",
   "keywords": [
     "nats",
@@ -34,7 +34,7 @@
     "depcheck": "dependency-check . lib/*",
     "depcheck:unused": "dependency-check ./package.json --unused --no-dev lib/*",
     "fmt": "js-beautify -n --config crockford.jscsrc -r lib/stan.js test/*.js test/support/*.js examples/* bench/*.js",
-    "gen": "protoc --js_out=import_style=commonjs,binary:. lib/pb/protocol.proto",
+    "gen": "protoc --js_out=import_style=commonjs_strict,binary:. lib/pb/protocol.proto",
     "lint": "eslint ./lib/stan.js ./examples ./bench ./test",
     "test": "npm run depcheck && npm run depcheck:unused && npm run lint && npm run test:unit",
     "test:unit": "mkdir -p reports/ && NODE_ENV=test multi='spec=- xunit=reports/mocha-xunit.xml' nyc mocha --timeout 10000 --slow 750",

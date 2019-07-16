@@ -92,7 +92,7 @@ describe('Basics', () => {
             });
             nc.on('connect', () => {
                 nc.subscribe(stan.pubPrefix + ".hello", (msg) => {
-                    const pm = proto.PubMsg.deserializeBinary(new Uint8Array(msg));
+                    const pm = proto.pb.PubMsg.deserializeBinary(new Uint8Array(msg));
                     const pm_cid = pm.getClientId();
                     clientID.should.be.equal(pm_cid);
                     const pm_connid = Buffer.from(pm.getConnId()).toString('utf8');
