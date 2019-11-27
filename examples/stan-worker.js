@@ -52,7 +52,7 @@ sc.on('connect', function() {
     subscription.on('unsubscribed', () => {
         console.log(`unsubscribed to ${subject}`);
     });
-    subscription.on('ready', (sub) => {
+    subscription.on('ready', () => {
         console.log(`subscribed to ${subject}`);
     });
     subscription.on('message', (msg) => {

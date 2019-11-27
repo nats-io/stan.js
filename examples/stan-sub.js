@@ -35,8 +35,8 @@ stan.on('connect', function() {
     subscription.on('unsubscribed', () => {
         console.log(`unsubscribed to ${subject}`);
     });
-    subscription.on('ready', (sub) => {
-        console.log(`subscribed to ${sub.subject}`);
+    subscription.on('ready', () => {
+        console.log(`subscribed to ${subject}`);
     });
     subscription.on('message', (msg) => {
         console.log(msg.getSubject(), `[${msg.getSequence()}]`, msg.getData());
