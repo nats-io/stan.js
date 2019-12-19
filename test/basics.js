@@ -888,4 +888,54 @@ describe('Basics', () => {
             });
         });
     });
+
+    it('redelivery count works', (done) => {
+        const clientID = nuid.next();
+        const subj = nuid.next();
+
+        const stan = STAN.connect(cluster, clientID, PORT);
+        const opts = stan.subscriptionOptions();
+        opts.setDeliverAllAvailable();
+        opts.setManualAckMode(true);
+        opts.setDurableName('my-durable');
+
+
+        let closeCount = 0;
+        function maybeClose() {
+            closeCount++;
+            if (closeCount >= 2) {
+                stan.close();
+                done();
+            }
+        }
+
+        function mh(sub) {
+            return function(msg) {
+                if(count === 0) {
+                    count++;
+                    sub.close();
+                    return;
+                }
+                msg.ack();
+                msg.isRedelivered().should.be.true;
+                msg.getRedeliveryCount().should.be.above(0);
+                sub.close();
+            };
+        }
+
+        let count = 0;
+        stan.on('connect', () => {
+            const sub1 = stan.subscribe(subj, "q", opts);
+            const sub2 = stan.subscribe(subj, "q", opts);
+
+            sub2.on('ready', () => {
+                stan.publish(subj);
+            });
+
+            sub1.on('message', mh(sub1));
+            sub1.on('closed', maybeClose);
+            sub2.on('message', mh(sub2));
+            sub2.on('closed', maybeClose);
+        });
+    });
 });
