@@ -41,7 +41,7 @@
     "wtf": "wtfnode /usr/local/bin/_mocha --timeout 10000 --slow 750"
   },
   "engines": {
-    "node": ">= 10.0.0"
+    "node": ">= 8.0.0"
   },
   "dependencies": {
     "google-protobuf": "^3.11.2",
