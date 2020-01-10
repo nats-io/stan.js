@@ -873,4 +873,28 @@ describe('Basics', () => {
       })
     })
   })
+
+  it('options should be passed', (done) => {
+    // this test stuffs garbage value into options, it simply tests that
+    // values are set on the client.
+    const opts = { test_opts: true }
+    const props = ['ackTimeout', 'connectTimeout', 'discoverPrefix', 'maxPubAcksInflight', 'nc',
+      'maxReconnectAttempts', 'stanEncoding', 'stanMaxPingOut', 'stanPingInterval', 'encoding',
+      'maxPingOut', 'maxReconnectAttempts', 'name', 'nkey', 'noRandomize', 'nonceSigner', 'pass',
+      'pedantic', 'pingInterval', 'reconnect', 'reconnectTimeWait', 'servers', 'tls', 'token',
+      'tokenHandler', 'url', 'useOldRequestStyle', 'user', 'userCreds', 'userJWT', 'verbose',
+      'waitOnFirstConnect', 'yieldTime']
+
+    props.forEach((v) => {
+      opts[v] = nuid.next()
+    })
+
+    // the property 'test_opts' aborts after parse
+    const sc = STAN.connect('c', 'id', opts)
+    props.forEach((v) => {
+      sc.options[v].should.be.equal(opts[v])
+    })
+
+    done()
+  })
 })
