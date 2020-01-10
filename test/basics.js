@@ -875,8 +875,8 @@ describe('Basics', () => {
   })
 
   it('options should be passed', (done) => {
-    // this is a garbage test that tests whether the properties are
-    // passed on actual values are wrong and would explode
+    // this test stuffs garbage value into options, it simply tests that
+    // values are set on the client.
     const opts = { test_opts: true }
     const props = ['ackTimeout', 'connectTimeout', 'discoverPrefix', 'maxPubAcksInflight', 'nc',
       'maxReconnectAttempts', 'stanEncoding', 'stanMaxPingOut', 'stanPingInterval', 'encoding',
