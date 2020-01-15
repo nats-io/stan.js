@@ -897,4 +897,10 @@ describe('Basics', () => {
 
     done()
   })
+
+  it('versions should match', () => {
+    const v = require('../package.json').version
+    should.exist(STAN.version)
+    v.should.be.equal(STAN.version)
+  })
 })

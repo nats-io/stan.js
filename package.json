@@ -1,6 +1,6 @@
 {
   "name": "node-nats-streaming",
-  "version": "0.3.0-1",
+  "version": "0.3.0-2",
   "description": "Node.js client for NATS Streaming, a lightweight, high-performance cloud native messaging system",
   "keywords": [
     "nats",
@@ -30,7 +30,7 @@
   "main": "./index.js",
   "scripts": {
     "cover": "nyc report --reporter=html && open coverage/index.html",
-    "coveralls": "npm run test && nyc report --reporter=text-lcov | coveralls",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "depcheck": "dependency-check --no-dev package.json",
     "depcheck:unused": "dependency-check package.json --no-dev --entry ./**/*.js",
     "fmt": "standard --fix 'lib/stan.js' 'test/**/*.js' 'examples/*.js' 'bench/*.js'",
