@@ -47,9 +47,7 @@ so.setManualAckMode(true);
 so.setDurableName('durable');
 
 let sub = sc.subscribe('foo');
-if (sub.isClosed()) {
-  console.log('sub is closed');
-}
+
 sub.unsubscribe();
 
 sub = sc.subscribe('bar', 'qg');

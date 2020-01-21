@@ -470,9 +470,6 @@ describe('Basics', () => {
       const sub = stan.subscribe(nuid.next())
       sub.on('ready', () => {
         sub.unsubscribe()
-        if (!sub.isClosed()) {
-          done('Subscription should have been closed')
-        }
       })
       sub.on('unsubscribed', () => {
         stan.close()
