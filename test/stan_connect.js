@@ -110,6 +110,24 @@ describe('Stan Connect', () => {
     })
   })
 
+  it('assigning already connected nats-connection should work', (done) => {
+    const nc = NATS.connect({
+      uri: uri,
+      encoding: 'binary'
+    })
+    nc.on('connect', () => {
+      const opts = {
+        nc: nc
+      }
+      const stan = STAN.connect(cluster, nuid.next(), opts)
+      stan.on('connect', () => {
+        stan.close()
+        nc.close()
+        done()
+      })
+    })
+  })
+
   it('non-binary nats connection should fail', (done) => {
     const nc = NATS.connect({
       uri: uri,
