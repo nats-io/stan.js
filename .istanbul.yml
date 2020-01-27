@@ -1,7 +1,0 @@
-verbose: false
-
-instrumentation:
-  excludes: ['**/nuid/**', '**/pb/**']
-
-reporting:
-  dir: ./reports/coverage

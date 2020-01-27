@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The NATS Authors
+ * Copyright 2016-2020 The NATS Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,27 +40,36 @@ export interface StanOptions extends ClientOpts {
 	nc?: nats.Client
 }
 
-// these are standard node-nats options, some are omitted until
-// nats-streaming-server supports them. Others like encoding
-// must always be set to binary.
+// these are standard node-nats options, some are omitted
+// like json, noEcho, preserveBuffers because they don't
+// make sense in nats-streaming. Encoding is here, however
+// it's value must always be set to binary as the client
+// exchanges protobuf messages
 export interface ClientOpts {
-    url?: string,
-    user?: string,
-    pass?: string,
-    verbose?: boolean,
-    pedantic?: boolean,
-    reconnect?: boolean,
+    encoding?: BufferEncoding,
+    maxPingOut?: number,
     maxReconnectAttempts?: number,
+    name?: string,
+    nkey?: string,
+    noRandomize?: boolean,
+    nonceSigner?: Function,
+    pass?: string,
+    pedantic?: boolean,
+    pingInterval?: number,
+    reconnect?: boolean,
     reconnectTimeWait?: number,
     servers?: Array<string>,
-    noRandomize?: boolean,
     tls?: boolean | tls.TlsOptions,
-    name?: string,
-    yieldTime?: number,
-    waitOnFirstConnect?: boolean,
     token?: string,
-    pingInterval?: number,
-    maxPingOut?: number,
+    tokenHandler?: Function,
+    url?: string,
+    useOldRequestStyle?: boolean,
+    user?: string,
+    userCreds?: string,
+    userJWT?: string | Function,
+    verbose?: boolean,
+    waitOnFirstConnect?: boolean,
+    yieldTime?: number
 }
 
 
