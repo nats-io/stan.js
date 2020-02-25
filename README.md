@@ -22,6 +22,9 @@ NATS streaming server provides the following high-level feature set:
 
 ```bash
 npm install node-nats-streaming
+
+# development versions of stan.js can be obtained by:
+npm install node-nats-streaming@next
 ```
 
 ## Basic Usage
@@ -32,9 +35,9 @@ npm install node-nats-streaming
 
 const sc = require('node-nats-streaming').connect('test-cluster', 'test')
 
-sc.on('connect', function () {
+sc.on('connect', () => {
   // Simple Publisher (all publishes are async in the node version of the client)
-  sc.publish('foo', 'Hello node-nats-streaming!', function (err, guid) {
+  sc.publish('foo', 'Hello node-nats-streaming!', (err, guid) => {
     if (err) {
       console.log('publish failed: ' + err)
     } else {
@@ -45,20 +48,20 @@ sc.on('connect', function () {
   // Subscriber can specify how many existing messages to get.
   const opts = sc.subscriptionOptions().setStartWithLastReceived()
   const subscription = sc.subscribe('foo', opts)
-  subscription.on('message', function (msg) {
+  subscription.on('message', (msg) => {
     console.log('Received a message [' + msg.getSequence() + '] ' + msg.getData())
   })
 
   // After one second, unsubscribe, when that is done, close the connection
-  setTimeout(function () {
+  setTimeout(() => {
     subscription.unsubscribe()
-    subscription.on('unsubscribed', function () {
+    subscription.on('unsubscribed', () => {
       sc.close()
     })
   }, 1000)
 })
 
-sc.on('close', function () {
+sc.on('close', () => {
   process.exit()
 })
 ```
@@ -111,14 +114,14 @@ Doing this causes the NATS Streaming server to track the last acknowledged messa
 ```javascript
 let sc = require('node-nats-streaming').connect('test-cluster', 'client-123')
 
-sc.on('connect', function () {
+sc.on('connect', () => {
   // Subscribe with durable name
   const opts = sc.subscriptionOptions()
   opts.setDeliverAllAvailable()
   opts.setDurableName('my-durable')
 
   let durableSub = sc.subscribe('foo', opts)
-  durableSub.on('message', function (msg) {
+  durableSub.on('message', (msg) => {
     console.log('Received a message: ' + msg.getData())
   })
 
@@ -127,7 +130,7 @@ sc.on('connect', function () {
 
   // client resumes durable subscription
   durableSub = sc.subscribe('foo', opts)
-  durableSub.on('message', function (msg) {
+  durableSub.on('message', (msg) => {
     console.log('Received a message: ' + msg.getData())
   })
 
@@ -138,7 +141,7 @@ sc.on('connect', function () {
   // client reconnects in the future with same clientID
   sc = require('node-nats-streaming').connect('test-cluster', 'client-123')
   durableSub = sc.subscribe('foo', opts)
-  durableSub.on('message', function (msg) {
+  durableSub.on('message', (msg) => {
     console.log('Received a message: ' + msg.getData())
   })
 })
@@ -159,7 +162,7 @@ sc.subscribe('foo', 'foo.workers', opts)
 For each message published, a [NUID](https://github.com/nats-io/nuid) is generated for the message on creation. When the message is received by the server, the client library is notified on its optional callback:
 
 ```javascript
-const guid = sc.publish('foo', 'Hello World!', function (err, aGuid) {
+const guid = sc.publish('foo', 'Hello World!', (err, aGuid) => {
   // err will be undefined if the message was accepted by the
   // NATS streaming server
   if (err) {
@@ -181,9 +184,9 @@ const opts = sc.subscriptionOptions()
 opts.setManualAckMode(true)
 opts.setAckWait(60 * 1000) // 60s
 
-var sub = sc.subscribe('Foo', opts)
+const sub = sc.subscribe('Foo', opts)
 
-sub.on('message', function (msg) {
+sub.on('message', (msg) => {
   // do something with the message
   msg.ack()
 })
@@ -227,8 +230,8 @@ const sc = STAN.connect('test-cluster', 'test', {
   stanPingInterval: 1000
 })
 
-sc.on('connect', function () {
-  sc.on('connection_lost', function (error) {
+sc.on('connect', () => {
+  sc.on('connection_lost', (error) => {
     console.log('disconnected from stan', error)
   })
 ...
