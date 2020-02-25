@@ -33,7 +33,7 @@
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "depcheck": "dependency-check --no-dev package.json",
     "depcheck:unused": "dependency-check package.json --no-dev --entry ./**/*.js",
-    "fmt": "standard --fix 'lib/stan.js' 'test/**/*.js' 'examples/*.js' 'bench/*.js'",
+    "fmt": "standard --fix index.js 'lib/stan.js' 'test/**/*.js' 'examples/*.js' 'bench/*.js'",
     "gen": "protoc --js_out=import_style=commonjs_strict,binary:. lib/pb/protocol.proto",
     "lint": "standard 'lib/stan.js' 'test/**/*.js' 'examples/*.js' 'bench/*.js'",
     "test": "npm run depcheck && npm run depcheck:unused && npm run lint && npm run test:typescript && npm run test:unit",
