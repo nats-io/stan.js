@@ -142,7 +142,7 @@ describe('Connect', () => {
       connectingEvents++
     })
     setTimeout(() => {
-      connectingEvents.should.equal(5)
+      connectingEvents.should.be.within(5, 6)
       stan.close()
       done()
     }, 550)
