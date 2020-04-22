@@ -32,7 +32,7 @@ describe('Stan Connection Lost', () => {
   const NATS_B_CLUSTER = 6792
 
   const cluster = 'test-cluster'
-  const uri = 'nats://localhost:' + NATS_A
+  const stanURL = 'nats://localhost:' + NATS_A
   let stanSrv = null
   let natsA = null
   let natsB = null
@@ -66,7 +66,7 @@ describe('Stan Connection Lost', () => {
   it('should get a "connection_lost" event if the server goes away', (done) => {
     let t1, t2
     const sc = STAN.connect(cluster, nuid.next(), {
-      url: uri,
+      url: stanURL,
       stanPingInterval: 1000,
       stanMaxPingOut: 2
     })
@@ -89,7 +89,7 @@ describe('Stan Connection Lost', () => {
 
   it('should get a "connection_lost" event if the server cycles and looses state', (done) => {
     const stan = STAN.connect(cluster, nuid.next(), {
-      url: uri,
+      url: stanURL,
       stanPingInterval: 1000,
       stanMaxPingOut: 3
     })
@@ -122,16 +122,16 @@ describe('Stan Connection Lost', () => {
       // blank out the server updates, we want the client
       // to only connect to the given server while allowing
       // stan to know about cluster topology
-      sc.processServerUpdate = () => {
+      sc.nc.servers.processServerUpdates = () => {
         // overwrite process server update
         // to do nothing
       }
 
       sc.on('connect', () => {
         // console.log(sc.nc.options.name, 'connected', sc.nc.servers[0].toString());
-        const count = sc.nc.servers.length
+        const count = sc.nc.servers.pool.length
         if (count > 1) {
-          sc.nc.servers.splice(1, count - 1)
+          sc.nc.servers.pool.splice(1, count - 1)
         }
       })
 

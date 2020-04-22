@@ -27,7 +27,7 @@ const timers = require('timers')
 describe('Stan Connect', () => {
   const PORT = 9876
   const cluster = 'test-cluster'
-  const uri = 'nats://localhost:' + PORT
+  const stanURL = 'nats://localhost:' + PORT
   let server
 
   beforeEach((done) => {
@@ -96,7 +96,7 @@ describe('Stan Connect', () => {
 
   it('use binary nats connection should work', (done) => {
     const nc = NATS.connect({
-      uri: uri,
+      url: stanURL,
       encoding: 'binary'
     })
     const opts = {
@@ -112,7 +112,7 @@ describe('Stan Connect', () => {
 
   it('assigning already connected nats-connection should work', (done) => {
     const nc = NATS.connect({
-      uri: uri,
+      url: stanURL,
       encoding: 'binary'
     })
     nc.on('connect', () => {
@@ -130,7 +130,7 @@ describe('Stan Connect', () => {
 
   it('non-binary nats connection should fail', (done) => {
     const nc = NATS.connect({
-      uri: uri,
+      url: stanURL,
       encoding: 'utf8'
     })
     const opts = {

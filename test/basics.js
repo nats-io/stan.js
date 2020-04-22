@@ -18,6 +18,7 @@
 
 const STAN = require('../lib/stan')
 const NATS = require('nats')
+const Payload = require('nats').Payload
 const proto = require('../lib/pb')
 const ssc = require('./support/stan_server_control')
 const nuid = require('nuid')
@@ -37,7 +38,7 @@ function latcher (count, done) {
 describe('Basics', () => {
   const cluster = 'test-cluster'
   const PORT = 1423
-  const uri = 'nats://localhost:' + PORT
+  const stanURL = 'nats://localhost:' + PORT
   let server
 
   // Start up our own streaming
@@ -85,13 +86,12 @@ describe('Basics', () => {
     stan.on('connect', () => {
       const connID = Buffer.from(stan.connId).toString('utf8')
       const nc = NATS.connect({
-        encoding: 'binary',
-        preserveBuffers: true,
+        payload: Payload.Binary,
         port: PORT
       })
       nc.on('connect', () => {
-        nc.subscribe(stan.pubPrefix + '.hello', (msg) => {
-          const pm = proto.pb.PubMsg.deserializeBinary(new Uint8Array(msg))
+        nc.subscribe(stan.pubPrefix + '.hello', (_, msg) => {
+          const pm = proto.pb.PubMsg.deserializeBinary(new Uint8Array(msg.data))
           const cid = pm.getClientId()
           clientID.should.be.equal(cid)
           const connid = Buffer.from(pm.getConnId()).toString('utf8')
@@ -178,6 +178,9 @@ describe('Basics', () => {
       })
       sub.on('message', () => {
         sub.unsubscribe()
+      })
+      sub.on('error', (err) => {
+        done(err)
       })
     })
   })
@@ -332,7 +335,8 @@ describe('Basics', () => {
   it('maxPubAcksInflight should cb on error', (done) => {
     const opts = {
       maxPubAcksInflight: 3,
-      uri: uri
+      url: stanURL,
+      waitOnFirstConnect: true
     }
     const stan = STAN.connect(cluster, nuid.next(), opts)
     let failed = false
@@ -361,7 +365,7 @@ describe('Basics', () => {
   it('maxPubAcksInflight should toss on error', (done) => {
     const opts = {
       maxPubAcksInflight: 3,
-      uri: uri
+      url: stanURL
     }
     const stan = STAN.connect(cluster, nuid.next(), opts)
     const buf = Buffer.from('HelloWorld', 'utf8')
@@ -415,7 +419,7 @@ describe('Basics', () => {
 
   it('subscribe emits timeout', (done) => {
     const stan = STAN.connect(cluster, nuid.next(), {
-      uri: uri,
+      url: stanURL,
       connectTimeout: 200
     })
     stan.on('connect', () => {
@@ -749,7 +753,7 @@ describe('Basics', () => {
     })
   })
 
-  it('durables should work', (done) => {
+  it('reconnect - durables should work', (done) => {
     const clientID = nuid.next()
     const subj = nuid.next()
 
@@ -785,7 +789,7 @@ describe('Basics', () => {
         sub2.on('message', (msg) => {
           const seq = msg.getSequence()
           if (seq < 2) {
-            should.fail("didn't expect to see sequences below 2")
+            should.fail("didn't expect to see sequences below 2 got")
           }
           seq.should.be.equal(3)
           stan2.close()
@@ -831,7 +835,7 @@ describe('Basics', () => {
     })
   })
 
-  it('durables should work', (done) => {
+  it('resub - durables should work', (done) => {
     const clientID = nuid.next()
     const subj = nuid.next()
 

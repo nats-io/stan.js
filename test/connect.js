@@ -38,7 +38,7 @@ function latcher (count, done) {
 describe('Connect', () => {
   const PORT = 9876
   const cluster = 'test-cluster'
-  const uri = 'nats://localhost:' + PORT
+  const stanURL = 'nats://localhost:' + PORT
   let server
 
   const serverDir = path.join(os.tmpdir(), nuid.next())
@@ -92,7 +92,7 @@ describe('Connect', () => {
   })
 
   it('should perform basic connect with uri', (done) => {
-    const sc = STAN.connect(cluster, nuid.next(), uri)
+    const sc = STAN.connect(cluster, nuid.next(), stanURL)
     let connected = false
     sc.on('close', () => {
       connected.should.be.true()
@@ -106,7 +106,7 @@ describe('Connect', () => {
 
   it('should perform basic connect with options arg', (done) => {
     const options = {
-      uri: uri
+      url: stanURL
     }
     const sc = STAN.connect(cluster, nuid.next(), options)
     let connected = false
@@ -129,7 +129,7 @@ describe('Connect', () => {
 
   it('should emit connecting events and try repeatedly if configured and no server available', (done) => {
     const stan = STAN.connect(cluster, nuid.next(), {
-      uri: 'nats://localhost:22222',
+      url: 'nats://localhost:22222',
       waitOnFirstConnect: true,
       reconnectTimeWait: 100,
       maxReconnectAttempts: 20
@@ -152,7 +152,7 @@ describe('Connect', () => {
     const latch = latcher(2, done)
 
     const opts = {
-      servers: ['nats://localhost:22222', uri, 'nats://localhost:22223']
+      servers: ['nats://localhost:22222', stanURL, 'nats://localhost:22223']
     }
 
     if (noRandomize) {
