@@ -1,5 +1,5 @@
-import { Stream } from "./stream";
-import { StanOptions, Message } from "node-nats-streaming";
+import { Stream } from "./streamer";
+import { StanOptions, Message } from "..";
 
 
 /** steps::
