@@ -1,8 +1,11 @@
-import { Stream } from "./streamer";
-import { StanOptions, Message } from "..";
+import { Stream } from "./stream";
+import { StanOptions, Message } from "node-nats-streaming";
 
 
-
+/** steps::
+ * docker-compose up -d --build --no-deps nats-streaming-1
+ * ts-node natsStreaming.ts
+ */
 (async function connect() {
     const clientID = "client1";
     const clusterID = "nats-streaming";
@@ -46,3 +49,4 @@ import { StanOptions, Message } from "..";
    }, 200)
 
 })();
+

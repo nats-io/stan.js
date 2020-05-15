@@ -1,0 +1,59 @@
+version: "3"
+
+services:
+  nats-streaming-1:
+    image: "nats-streaming"
+    container_name: gc_nats_streamer
+    command:
+      - "--cluster"
+      - "nats://0.0.0.0:6222"
+      - "--cluster_id"
+      - nats-streaming
+      - "--clustered"
+      - "--cluster_bootstrap"
+      - "--cluster_log_path"
+      - /data/log
+      - "--cluster_node_id"
+      - nats-streaming-1
+      - "--cluster_raft_logging"
+      - "--debug"
+      - "--dir"
+      - /data/msg
+      - "--http_port"
+      - "8222"
+      - "--port"
+      - "4222"
+      - "--store"
+      - file
+      - "--stan_debug"
+      - "--hb_interval"
+      - 2s
+      - "--hb_fail_count"
+      - "1"
+      - "--hb_timeout"
+      - 5s
+    ports:
+      - "14222:4222"
+      - "18222:8222"
+    volumes:
+      - "./nats-streaming-1:/data"
+    restart: unless-stopped
+    networks:
+      - realtime
+
+#   portainer:
+#     image: portainer/portainer
+#     command: -H tcp://tasks.agent:9001 --tlsskipverify
+#     ports:
+#         - "9000:9000"
+#         - "8000:8000"
+#     volumes:
+#         - portainer_data:/data
+#     networks:
+#         - realtime
+
+networks:
+  realtime:
+
+volumes:
+  portainer_data:
