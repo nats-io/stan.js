@@ -84,7 +84,8 @@ describe('Basics', () => {
     const clientID = nuid.next()
     const stan = STAN.connect(cluster, clientID, PORT)
     stan.on('connect', () => {
-      const connID = Buffer.from(stan.connId).toString('utf8')
+      const connID = Buffer.from(stan.connId)
+        .toString('utf8')
       const nc = NATS.connect({
         payload: Payload.Binary,
         port: PORT
@@ -94,7 +95,8 @@ describe('Basics', () => {
           const pm = proto.pb.PubMsg.deserializeBinary(new Uint8Array(msg.data))
           const cid = pm.getClientId()
           clientID.should.be.equal(cid)
-          const connid = Buffer.from(pm.getConnId()).toString('utf8')
+          const connid = Buffer.from(pm.getConnId())
+            .toString('utf8')
           connID.should.be.equal(connid)
           nc.close()
           done()
@@ -211,7 +213,10 @@ describe('Basics', () => {
       so.setStartAt(STAN.StartPosition.FIRST)
       const sub = stan.subscribe(subject, so)
       sub.on('message', (m) => {
-        m.getSubject().should.be.equal(subject)
+        m.getSubject()
+          .should
+          .be
+          .equal(subject)
         sub.unsubscribe()
       })
       sub.on('unsubscribed', () => {
@@ -238,14 +243,20 @@ describe('Basics', () => {
       so.setStartAt(STAN.StartPosition.FIRST)
       const sub1 = stan.subscribe(subja, so)
       sub1.on('message', (m) => {
-        m.getSubject().should.be.equal(subja)
+        m.getSubject()
+          .should
+          .be
+          .equal(subja)
         sub1.unsubscribe()
       })
       sub1.on('unsubscribed', latch)
 
       const sub2 = stan.subscribe(subjb, so)
       sub2.on('message', (m) => {
-        m.getSubject().should.be.equal(subjb)
+        m.getSubject()
+          .should
+          .be
+          .equal(subjb)
         sub2.unsubscribe()
       })
       sub2.on('unsubscribed', latch)
@@ -498,7 +509,8 @@ describe('Basics', () => {
       sub.on('message', (msg) => {
         if (!gotFirst) {
           gotFirst = true
-          should(msg.getData()).equal('second', 'second message was not the one expected')
+          should(msg.getData())
+            .equal('second', 'second message was not the one expected')
           stan.close()
           done()
         }
@@ -532,7 +544,8 @@ describe('Basics', () => {
       sub.on('message', (msg) => {
         if (!gotFirst) {
           gotFirst = true
-          should(msg.getData()).equal('third', 'second message was not the one expected')
+          should(msg.getData())
+            .equal('third', 'second message was not the one expected')
           stan.close()
           done()
         }
@@ -566,7 +579,8 @@ describe('Basics', () => {
       sub.on('message', (msg) => {
         if (!gotFirst) {
           gotFirst = true
-          should(msg.getData()).equal('fourth', 'message was not the one expected')
+          should(msg.getData())
+            .equal('fourth', 'message was not the one expected')
           stan.close()
           done()
         }
@@ -590,7 +604,8 @@ describe('Basics', () => {
         stan.publish(subj, 'sixth', waitForSix)
       }, 1100)
     })
-  }).timeout(5000)
+  })
+    .timeout(5000)
 
   it('subscribe after a specific time on last received', (done) => {
     const stan = STAN.connect(cluster, nuid.next(), PORT)
@@ -607,7 +622,8 @@ describe('Basics', () => {
           gotFirst = true
           // node will be spurious since we are in a single thread
           const ok = msg.getData() === 'fourth' || msg.getData() === 'fifth' || msg.getData() === 'sixth'
-          should(ok).equal(true, 'message was not the one expected')
+          should(ok)
+            .equal(true, 'message was not the one expected')
           stan.close()
           done()
         }
@@ -631,7 +647,8 @@ describe('Basics', () => {
         stan.publish(subj, 'sixth', waitForSix)
       }, 1100)
     })
-  }).timeout(5000)
+  })
+    .timeout(5000)
 
   it('subscribe starting on new', (done) => {
     const stan = STAN.connect(cluster, nuid.next(), PORT)
@@ -646,7 +663,10 @@ describe('Basics', () => {
       sub.on('message', (msg) => {
         if (!gotFirst) {
           gotFirst = true
-          msg.getData().should.be.equal('fourth')
+          msg.getData()
+            .should
+            .be
+            .equal('fourth')
           stan.close()
           done()
         }
@@ -682,14 +702,22 @@ describe('Basics', () => {
       opts.setDeliverAllAvailable()
       const sub = stan.subscribe(subj, opts)
       sub.on('message', (msg) => {
-        msg.getTimestamp().getTime().should.be.equal(parseInt(msg.getTimestampRaw() / 1000000, 10))
-        msg.isRedelivered().should.be.equal(false)
+        msg.getTimestamp()
+          .getTime()
+          .should
+          .be
+          .equal(parseInt(msg.getTimestampRaw() / 1000000, 10))
+        msg.isRedelivered()
+          .should
+          .be
+          .equal(false)
         const buf = msg.getRawData()
         buf.length.should.be.greaterThan(0)
 
         if (!gotFirst) {
           gotFirst = true
-          should(msg.getData()).equal('first', 'second message was not the one expected')
+          should(msg.getData())
+            .equal('first', 'second message was not the one expected')
           stan.close()
           done()
         }
@@ -838,7 +866,6 @@ describe('Basics', () => {
   it('resub - durables should work', (done) => {
     const clientID = nuid.next()
     const subj = nuid.next()
-
     const stan = STAN.connect(cluster, clientID, PORT)
     const opts = stan.subscriptionOptions()
     opts.setDeliverAllAvailable()
@@ -919,6 +946,7 @@ describe('Basics', () => {
     opts.setDurableName('my-durable')
 
     let closeCount = 0
+
     function maybeClose () {
       closeCount++
       if (closeCount >= 2) {
@@ -935,8 +963,14 @@ describe('Basics', () => {
           return
         }
         msg.ack()
-        msg.isRedelivered().should.be.true()
-        msg.getRedeliveryCount().should.be.above(0)
+        msg.isRedelivered()
+          .should
+          .be
+          .true()
+        msg.getRedeliveryCount()
+          .should
+          .be
+          .above(0)
         sub.close()
       }
     }
@@ -954,6 +988,35 @@ describe('Basics', () => {
       sub1.on('closed', maybeClose)
       sub2.on('message', mh(sub2))
       sub2.on('closed', maybeClose)
+    })
+  })
+
+  it('sub emits ready', (done) => {
+    const stan = STAN.connect(cluster, nuid.next(), PORT)
+    stan.on('connect', () => {
+      const subject = nuid.next()
+      const opts = stan.subscriptionOptions()
+      const sub = stan.subscribe(subject, '', opts)
+      sub.on('ready', () => {
+        done()
+      })
+    })
+  })
+
+  it('sub emits unsubscribed', (done) => {
+    const stan = STAN.connect(cluster, nuid.next(), PORT)
+    stan.on('connect', () => {
+      const subject = nuid.next()
+      const opts = stan.subscriptionOptions()
+      const sub = stan.subscribe(subject, '', opts)
+      sub.on('unsubscribed', () => {
+        done()
+      })
+      sub.on('ready', () => {
+        setTimeout(() => {
+          sub.unsubscribe()
+        })
+      })
     })
   })
 })
