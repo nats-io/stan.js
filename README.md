@@ -278,16 +278,15 @@ Stan subscription objects
 
 The following is a list of connection options and default values.
 
-| Option                 | Default                   | Description
+| Option                 | Default                   | Description**
 |--------                |---------                  |------------
-| `ackTimeout`           | `30000`                   | Timeout for client to acknowledging messages received from the server in milliseconds.
-| `connectTimeout`       | `2000`                    | Timeout for interacting with the nats-streaming-server in milliseconds.
+| `ackTimeout`           | `30000`                   | Timeout for the server to receive acknowledgement messages from the client in milliseconds.
+| `connectTimeout`       | `2000`                    | Timeout for the client to receive request responses from the nats-streaming-server in milliseconds.
 | `discoverPrefix`       | `_STAN.discover`          | Subject prefix used to discover nats-streaming-servers (must match server).
 | `maxPubAcksInflight`   | `16384`                   | Maximum number of messages a publisher may have in flight without acknowledgment.
 | `maxReconnectAttempts` | `-1`                      | Maximum number of reconnect attempts (infinite) (nats connection option).
 | `stanEncoding`         | `utf8`                    | Encoding used by stan to decode strings.
-| `stanEncoding`         | `utf8`                    | Encoding used by stan to decode strings.
-| `stanMaxPingOut`       | `3`                       | Maximum number of missing pongs from the nats-streaming-server before the connection is lost.
+| `stanMaxPingOut`       | `3`                       | Maximum number of missing pongs from the nats-streaming-server before the connection is lost and closed.
 | `stanPingInterval`     | `5000`                    | Client ping interval to the nats-streaming-server in milliseconds.
 | `url`                  | `"nats://localhost:4222"` | Connection url (nats connection option)
 | `nc`                   |                           | A nats.js connection. It is recommended to not reuse a nats.js connection directly.
