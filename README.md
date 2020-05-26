@@ -247,6 +247,57 @@ Also, while a client is "disconnected" from the server, another application with
 
 Prior to client `0.1.0` and server `0.10.0`, if the communication between the first client and server were to be restored, and the application would send messages, the server would accept those because the published messages client ID would be valid, although the client is not. With client at `0.1.0`+ and server `0.10.0`+, additional information is sent with each message to allow the server to reject messages from a client that has been replaced by another client.
 
+## Events
+
+The stan connection and subscription are event emitters. You can register handlers to get
+notified of errors and lifecycle changes
+
+### Stan connections events
+
+- `connect`: `(stanConnection): void;`
+- `close`: `(err?): void;`
+- `disconnect`: `(): void;`
+- `reconnect`: `(stanConnection):void;`
+- `reconnecting`: `():void;`
+- `error`: (err): `void;`
+- `permission_error`: `(err): void;`
+- `connection_lost` `(err): void;`
+    
+### Stan subscriptions events
+
+ - `error`: `(err): void;`
+ - `timeout`: `(err): void;`
+ - `ready`: `(): void;`
+ - `message`: `(msg): void;`
+ - `unsubscribed`: `(): void;`
+ - `closed`: `(): void;`
+
+Stan subscription objects 
+
+## Connect Options
+
+The following is a list of connection options and default values.
+
+| Option                 | Default                   | Description
+|--------                |---------                  |------------
+| `ackTimeout`           | `30000`                   | Timeout for client to acknowledging messages received from the server in milliseconds.
+| `connectTimeout`       | `2000`                    | Timeout for interacting with the nats-streaming-server in milliseconds.
+| `discoverPrefix`       | `_STAN.discover`          | Subject prefix used to discover nats-streaming-servers (must match server).
+| `maxPubAcksInflight`   | `16384`                   | Maximum number of messages a publisher may have in flight without acknowledgment.
+| `maxReconnectAttempts` | `-1`                      | Maximum number of reconnect attempts (infinite) (nats connection option).
+| `stanEncoding`         | `utf8`                    | Encoding used by stan to decode strings.
+| `stanEncoding`         | `utf8`                    | Encoding used by stan to decode strings.
+| `stanMaxPingOut`       | `3`                       | Maximum number of missing pongs from the nats-streaming-server before the connection is lost.
+| `stanPingInterval`     | `5000`                    | Client ping interval to the nats-streaming-server in milliseconds.
+| `url`                  | `"nats://localhost:4222"` | Connection url (nats connection option)
+| `nc`                   |                           | A nats.js connection. It is recommended to not reuse a nats.js connection directly.
+
+
+The stan.js client honors all [standard nats.js connection options](https://github.com/nats-io/nats.js#connect-options), with the exception of:
+    - `json`
+    - `noEcho`
+    - `preserveBuffers`
+
 
 ## Supported Node Versions
 
