@@ -23,13 +23,10 @@ export const version: string;
 
 /**
  * Connect to a nats-server and return the client.
- * Argument can be a url, or an object with a 'url'
- * property and additional options.
  */
-export function connect(clusterID: string, clientID: string, opts?: StanOptions): Stan;
+export function connect(clusterID: string, clientID: string, opts?: StanOptions|string|number): Stan;
 
 export interface StanOptions extends ClientOpts {
-	url?: string,
     connectTimeout?: number,
     ackTimeout?: number,
 	discoverPrefix?: string,
@@ -57,16 +54,20 @@ export interface ClientOpts {
     pedantic?: boolean,
     pingInterval?: number,
     reconnect?: boolean,
+    reconnectJitter?: number,
+    reconnectJitterTLS?: number,
+    reconnectDelayHandler?: ()=>number,
     reconnectTimeWait?: number,
     servers?: Array<string>,
+    timeout?: number,
     tls?: boolean | tls.TlsOptions,
     token?: string,
-    tokenHandler?: Function,
+    tokenHandler?: ()=>string,
     url?: string,
     useOldRequestStyle?: boolean,
     user?: string,
     userCreds?: string,
-    userJWT?: string | Function,
+    userJWT?: ()=>string | string,
     verbose?: boolean,
     waitOnFirstConnect?: boolean,
     yieldTime?: number
