@@ -14,7 +14,7 @@
  */
 
 
-import {connect, Message, StartPosition, version} from '..'
+import {connect, Message, NewSubscriptionOptions, StartPosition, version} from '..'
 
 console.log(version);
 
@@ -72,6 +72,9 @@ sub.on('message', (msg: Message) => {
 });
 sub.close();
 sub.unsubscribe();
+
+
+console.table(NewSubscriptionOptions());
 
 
 
