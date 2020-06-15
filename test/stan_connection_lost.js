@@ -148,7 +148,7 @@ describe('Stan Connection Lost', () => {
         // console.log(name, "connection_lost", sc.nc.servers[0].toString(), err);
         name.should.be.equal('sc1')
         should(gotAckError).be.true()
-        err.should.be.equal('client has been replaced or is no longer registered')
+        err.message.should.be.equal('client has been replaced or is no longer registered')
         if (sc2 !== null) {
           sc2.close()
         }
@@ -166,7 +166,7 @@ describe('Stan Connection Lost', () => {
       setTimeout(() => {
         natsA.kill()
         sc1.publish('hello', 'world', (err) => {
-          err.should.be.equal('client has been replaced or is no longer registered')
+          err.message.should.be.equal('client has been replaced or is no longer registered')
           gotAckError = true
         })
       }, 1000)
