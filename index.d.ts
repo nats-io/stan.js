@@ -276,3 +276,5 @@ declare interface SubscriptionOptions  {
      */
     setDurableName(durableName: string): SubscriptionOptions;
 }
+
+export function NewSubscriptionOptions(): SubscriptionOptions;
