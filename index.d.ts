@@ -112,6 +112,11 @@ declare class Message {
     isRedelivered():boolean;
 
     /**
+     * Returns a number of times message has been redelivered
+     */
+    getRedeliveryCount(): number;
+
+    /**
      * Returns an optional IEEE CRC32 checksum
      */
     getCrc32():number;
