@@ -4,13 +4,13 @@ sudo: false
 node_js:
   - "10"
   - "12"
-  - "13"
+  - "14"
 
 git:
   depth: false
 
 env:
-  - STAN_VERSION=v0.17.0
+  - STAN_VERSION=v0.21.1
 
 before_script:
   - wget "https://github.com/nats-io/nats-streaming-server/releases/download/$STAN_VERSION/nats-streaming-server-$STAN_VERSION-linux-amd64.zip" -O tmp.zip
