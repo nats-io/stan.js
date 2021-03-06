@@ -286,7 +286,7 @@ The following is a list of connection options and default values.
 | `maxPubAcksInflight`   | `16384`                   | Maximum number of messages a publisher may have in flight without acknowledgment.
 | `maxReconnectAttempts` | `-1`                      | Maximum number of reconnect attempts (infinite) (nats connection option).
 | `stanEncoding`         | `utf8`                    | Encoding used by stan to decode strings.
-| `stanMaxPingOut`       | `3`                       | Maximum number of missing pongs from the nats-streaming-server before the connection is lost and closed.
+| `stanMaxPingOut`       | `88`                      | Maximum number of missing pongs from the nats-streaming-server before the connection is lost and closed.
 | `stanPingInterval`     | `5000`                    | Client ping interval to the nats-streaming-server in milliseconds.
 | `url`                  | `"nats://localhost:4222"` | Connection url (nats connection option)
 | `nc`                   |                           | A nats.js connection. It is recommended to not reuse a nats.js connection directly.
