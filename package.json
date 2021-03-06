@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "google-protobuf": "^3.11.2",
-    "nats": "^1.4.9",
+    "nats": "^1.4.12",
     "nuid": "^1.1.4"
   },
   "devDependencies": {
