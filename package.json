@@ -38,29 +38,29 @@
     "lint": "standard 'lib/stan.js' 'test/**/*.js' 'examples/*.js' 'bench/*.js'",
     "test": "npm run depcheck && npm run depcheck:unused && npm run lint && npm run test:typescript && npm run test:unit",
     "test:typescript": "./node_modules/typescript/bin/tsc --strict --noEmit tstest/main.ts",
-    "test:unit": "mkdir -p reports/ && NODE_ENV=test multi='spec=- xunit=reports/mocha-xunit.xml' nyc mocha --timeout 10000 --slow 750",
+    "test:unit": "mkdir -p reports/ && NODE_ENV=test multi='spec=- xunit=reports/mocha-xunit.xml' nyc mocha --timeout 10000 --slow 750 --exit",
     "wtf": "wtfnode /usr/local/bin/_mocha --timeout 10000 --slow 750"
   },
   "engines": {
     "node": ">= 8.0.0"
   },
   "dependencies": {
-    "google-protobuf": "^3.11.2",
+    "google-protobuf": "^3.17.3",
     "nats": "^1.4.12",
-    "nuid": "^1.1.4"
+    "nuid": "^1.1.6"
   },
   "devDependencies": {
-    "@types/node": "^13.13.4",
+    "@types/node": "^15.12.4",
     "coveralls": "^3.1.0",
     "dependency-check": "4.1.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.29.0",
     "minimist": "^1.2.5",
-    "mocha": "^7.1.2",
+    "mocha": "^9.0.1",
     "mocha-lcov-reporter": "^1.3.0",
-    "nyc": "^15.0.1",
+    "nyc": "^15.1.0",
     "should": "^13.2.3",
-    "standard": "^14.3.3",
-    "typescript": "^3.8.3"
+    "standard": "^16.0.3",
+    "typescript": "^4.3.4"
   },
   "typings": "./index.d.ts",
   "nyc": {
