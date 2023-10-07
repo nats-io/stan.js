@@ -9,7 +9,9 @@ NATS Streaming Server is an extremely performant, lightweight reliable streaming
 [![npm](https://img.shields.io/npm/dt/node-nats-streaming.svg)](https://www.npmjs.com/package/node-nats-streaming)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
+# WARNING:  Deprecation Notice :warning:
 
+The NATS Streaming Server is being deprecated.  Critical bug fixes and security fixes will be applied until June of 2023.  NATS enabled applications requiring persistence should use [JetStream](https://docs.nats.io/nats-concepts/jetstream).
 
 NATS streaming server provides the following high-level feature set:
 - Log based persistence
